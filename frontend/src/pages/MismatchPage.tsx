@@ -13,11 +13,13 @@ function fmt(n: number, digits = 2): string {
   return n.toLocaleString('pt-BR', { minimumFractionDigits: digits, maximumFractionDigits: digits })
 }
 
+/** `pct` vem da API como fração (0.0038 = 0,38%) — nunca já em "por cento". */
 function DeltaCheck({ pct }: { pct: number }) {
-  const ok = Math.abs(pct) <= 3
+  const percent = pct * 100
+  const ok = Math.abs(percent) <= 3
   return (
     <span className={`delta-check ${ok ? 'delta-check--ok' : 'delta-check--bad'}`}>
-      {ok ? '✓' : '✕'} {fmt(pct)}%
+      {ok ? '✓' : '✕'} {fmt(percent)}%
     </span>
   )
 }
@@ -103,7 +105,7 @@ export function MismatchPage() {
                     <td>{p.label}</td>
                     <td>{fmt(p.original)}</td>
                     <td>{fmt(p.substituto)}</td>
-                    <td>{fmt(p.delta_pct)}%</td>
+                    <td>{fmt(p.delta_pct * 100)}%</td>
                   </tr>
                 ))}
               </tbody>
