@@ -1,0 +1,38 @@
+{
+  "header": {
+    "scenario_id": "corrections-brand-trina",
+    "descricao": "Correcoes termicas (preset Conservador) para 1 modulo da marca TRINA.",
+    "module_label": "TRINA | TSM-DE18M | 510W MONO (21,20%)",
+    "preset": "Conservador",
+    "autor": "fixture-generator",
+    "html_sha256": "14e1ee1bcc32c002e83bda2511a9fdb3753f551d98a3061163576be8d6508ac7"
+  },
+  "inputs": {
+    "mod": {
+      "brand": "TRINA",
+      "model": "TSM-DE18M | 510W MONO (21,20%)",
+      "label": "TRINA | TSM-DE18M | 510W MONO (21,20%)",
+      "pnom": 510,
+      "isc": 12.42,
+      "voc": 52.1,
+      "imp": 11.81,
+      "vmp": 43.2,
+      "coef_v": -0.25,
+      "coef_i": 0.04,
+      "coef_pmp": -0.34,
+      "efic": 21.2,
+      "altura_mm": 2187,
+      "largura_mm": 1102,
+      "espessura_mm": 35,
+      "peso_kg": 26.5
+    },
+    "tMin": -5,
+    "tMax": 70
+  },
+  "outputs": {
+    "vocMax": 56.0075,
+    "vmpMin": 36.5904,
+    "impMax": 12.022580000000001,
+    "iscMax": 12.64356
+  }
+}

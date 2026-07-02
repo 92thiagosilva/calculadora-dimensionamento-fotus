@@ -1,0 +1,38 @@
+{
+  "header": {
+    "scenario_id": "corrections-brand-leapton",
+    "descricao": "Correcoes termicas (preset Conservador) para 1 modulo da marca LEAPTON.",
+    "module_label": "LEAPTON | LP166-M-72-MH | 450W MONO (20,37%)",
+    "preset": "Conservador",
+    "autor": "fixture-generator",
+    "html_sha256": "14e1ee1bcc32c002e83bda2511a9fdb3753f551d98a3061163576be8d6508ac7"
+  },
+  "inputs": {
+    "mod": {
+      "brand": "LEAPTON",
+      "model": "LP166-M-72-MH | 450W MONO (20,37%)",
+      "label": "LEAPTON | LP166-M-72-MH | 450W MONO (20,37%)",
+      "pnom": 450,
+      "isc": 11.47,
+      "voc": 50,
+      "imp": 10.88,
+      "vmp": 41.4,
+      "coef_v": -0.28,
+      "coef_i": 0.05,
+      "coef_pmp": -0.36,
+      "efic": 20.4,
+      "altura_mm": 2108,
+      "largura_mm": 1048,
+      "espessura_mm": 30,
+      "peso_kg": 24
+    },
+    "tMin": -5,
+    "tMax": 70
+  },
+  "outputs": {
+    "vocMax": 54.2,
+    "vmpMin": 34.6932,
+    "impMax": 11.1248,
+    "iscMax": 11.728075
+  }
+}

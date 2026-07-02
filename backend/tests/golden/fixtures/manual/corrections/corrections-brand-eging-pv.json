@@ -1,0 +1,38 @@
+{
+  "header": {
+    "scenario_id": "corrections-brand-eging-pv",
+    "descricao": "Correcoes termicas (preset Conservador) para 1 modulo da marca EGING PV.",
+    "module_label": "EGING PV | EG-570NT72-HL/BF-DG-G30 | 570W MONO N-TYPE BIFACIAL DG FRAME DE FIBRA DE VIDRO (22,10%)",
+    "preset": "Conservador",
+    "autor": "fixture-generator",
+    "html_sha256": "14e1ee1bcc32c002e83bda2511a9fdb3753f551d98a3061163576be8d6508ac7"
+  },
+  "inputs": {
+    "mod": {
+      "brand": "EGING PV",
+      "model": "EG-570NT72-HL/BF-DG-G30 | 570W MONO N-TYPE BIFACIAL DG FRAME DE FIBRA DE VIDRO (22,10%)",
+      "label": "EGING PV | EG-570NT72-HL/BF-DG-G30 | 570W MONO N-TYPE BIFACIAL DG FRAME DE FIBRA DE VIDRO (22,10%)",
+      "pnom": 570,
+      "isc": 14.25,
+      "voc": 51.06,
+      "imp": 13.46,
+      "vmp": 42.35,
+      "coef_v": -0.24,
+      "coef_i": 0.046,
+      "coef_pmp": -0.29,
+      "efic": 22.1,
+      "altura_mm": 2278,
+      "largura_mm": 1134,
+      "espessura_mm": 30,
+      "peso_kg": 31.7
+    },
+    "tMin": -5,
+    "tMax": 70
+  },
+  "outputs": {
+    "vocMax": 54.736320000000006,
+    "vmpMin": 36.823325000000004,
+    "impMax": 13.738622,
+    "iscMax": 14.544974999999999
+  }
+}

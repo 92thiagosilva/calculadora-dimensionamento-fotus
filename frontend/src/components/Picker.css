@@ -1,0 +1,114 @@
+.picker {
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+}
+
+.picker__filters {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.picker__filters .input {
+  flex: 1 1 260px;
+}
+
+.picker__filters .select {
+  flex: 0 0 200px;
+}
+
+.picker__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 0.9rem;
+  max-height: 560px;
+  overflow-y: auto;
+  padding: 0.2rem;
+}
+
+.picker__card {
+  text-align: left;
+  background: #fff;
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 1rem 1.1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.08s ease;
+}
+
+.picker__card:hover {
+  border-color: var(--color-navy);
+  box-shadow: var(--shadow-sm);
+}
+
+.picker__card:active {
+  transform: translateY(1px);
+}
+
+.picker__card--selected {
+  border-color: var(--color-amber);
+  background: #fffaf0;
+  box-shadow: 0 0 0 3px rgba(251, 186, 32, 0.25);
+}
+
+.picker__card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.6rem;
+}
+
+.picker__power-badge {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: baseline;
+  gap: 0.15rem;
+  background: var(--color-navy);
+  color: #fff;
+  font-weight: 800;
+  font-size: 1.15rem;
+  line-height: 1;
+  padding: 0.4rem 0.6rem;
+  border-radius: var(--radius-sm, 6px);
+  white-space: nowrap;
+}
+
+.picker__power-badge small {
+  font-size: 0.62rem;
+  font-weight: 700;
+  opacity: 0.85;
+}
+
+.picker__card--selected .picker__power-badge {
+  background: var(--color-amber-dark, var(--color-amber));
+}
+
+.picker__card-title {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.picker__card-title strong {
+  color: var(--color-navy);
+  font-size: 1rem;
+}
+
+.picker__card-title .muted {
+  font-size: 0.85rem;
+}
+
+.picker__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.picker__check {
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: var(--color-amber-dark);
+}

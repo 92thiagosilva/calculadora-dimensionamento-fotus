@@ -1,0 +1,38 @@
+{
+  "header": {
+    "scenario_id": "corrections-brand-sunergy",
+    "descricao": "Correcoes termicas (preset Conservador) para 1 modulo da marca SUNERGY.",
+    "module_label": "SUNERGY | SUN66M-H12J | 700W | MONO N-TYPE (22,53%)",
+    "preset": "Conservador",
+    "autor": "fixture-generator",
+    "html_sha256": "14e1ee1bcc32c002e83bda2511a9fdb3753f551d98a3061163576be8d6508ac7"
+  },
+  "inputs": {
+    "mod": {
+      "brand": "SUNERGY",
+      "model": "SUN66M-H12J | 700W | MONO N-TYPE (22,53%)",
+      "label": "SUNERGY | SUN66M-H12J | 700W | MONO N-TYPE (22,53%)",
+      "pnom": 700,
+      "isc": 17.35,
+      "voc": 50,
+      "imp": 16.32,
+      "vmp": 42.9,
+      "coef_v": -0.24,
+      "coef_i": 0.04,
+      "coef_pmp": -0.26,
+      "efic": 22.53,
+      "altura_mm": 2384,
+      "largura_mm": 1303,
+      "espessura_mm": 35,
+      "peso_kg": 34.5
+    },
+    "tMin": -5,
+    "tMax": 70
+  },
+  "outputs": {
+    "vocMax": 53.6,
+    "vmpMin": 37.8807,
+    "impMax": 16.61376,
+    "iscMax": 17.662300000000002
+  }
+}

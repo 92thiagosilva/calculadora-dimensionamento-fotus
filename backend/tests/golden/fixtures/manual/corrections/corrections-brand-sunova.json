@@ -1,0 +1,38 @@
+{
+  "header": {
+    "scenario_id": "corrections-brand-sunova",
+    "descricao": "Correcoes termicas (preset Conservador) para 1 modulo da marca SUNOVA.",
+    "module_label": "SUNOVA | HI-MILO-SS-72MDH | 555W MONO (21,50%)",
+    "preset": "Conservador",
+    "autor": "fixture-generator",
+    "html_sha256": "14e1ee1bcc32c002e83bda2511a9fdb3753f551d98a3061163576be8d6508ac7"
+  },
+  "inputs": {
+    "mod": {
+      "brand": "SUNOVA",
+      "model": "HI-MILO-SS-72MDH | 555W MONO (21,50%)",
+      "label": "SUNOVA | HI-MILO-SS-72MDH | 555W MONO (21,50%)",
+      "pnom": 555,
+      "isc": 14.13,
+      "voc": 49.68,
+      "imp": 13.58,
+      "vmp": 40.89,
+      "coef_v": -0.27,
+      "coef_i": 0.048,
+      "coef_pmp": -0.35,
+      "efic": 21.5,
+      "altura_mm": 2278,
+      "largura_mm": 1134,
+      "espessura_mm": 30,
+      "peso_kg": 27.6
+    },
+    "tMin": -5,
+    "tMax": 70
+  },
+  "outputs": {
+    "vocMax": 53.70408,
+    "vmpMin": 34.449825000000004,
+    "impMax": 13.873328,
+    "iscMax": 14.435208000000001
+  }
+}

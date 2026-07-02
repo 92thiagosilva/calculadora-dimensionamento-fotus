@@ -1,0 +1,28 @@
+.area-page {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.area-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+}
+
+.area-form__row {
+  display: flex;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.area-form__row .field {
+  flex: 1 1 240px;
+}
+
+.area-page__selected-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-bottom: 1rem;
+}

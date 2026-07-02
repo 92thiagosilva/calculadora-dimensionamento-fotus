@@ -1,0 +1,38 @@
+{
+  "header": {
+    "scenario_id": "corrections-brand-techpower-by-tsun",
+    "descricao": "Correcoes termicas (preset Conservador) para 1 modulo da marca TECHPOWER, BY TSUN.",
+    "module_label": "TECHPOWER, BY TSUN | TS560S8B | 560W MONO (21,68%)",
+    "preset": "Conservador",
+    "autor": "fixture-generator",
+    "html_sha256": "14e1ee1bcc32c002e83bda2511a9fdb3753f551d98a3061163576be8d6508ac7"
+  },
+  "inputs": {
+    "mod": {
+      "brand": "TECHPOWER, BY TSUN",
+      "model": "TS560S8B | 560W MONO (21,68%)",
+      "label": "TECHPOWER, BY TSUN | TS560S8B | 560W MONO (21,68%)",
+      "pnom": 560,
+      "isc": 13.98,
+      "voc": 50.1,
+      "imp": 13.25,
+      "vmp": 42.3,
+      "coef_v": -0.26,
+      "coef_i": 0.043,
+      "coef_pmp": -0.36,
+      "efic": 21.68,
+      "altura_mm": 2278,
+      "largura_mm": 1134,
+      "espessura_mm": 30,
+      "peso_kg": 27.5
+    },
+    "tMin": -5,
+    "tMax": 70
+  },
+  "outputs": {
+    "vocMax": 54.0078,
+    "vmpMin": 35.447399999999995,
+    "impMax": 13.506387499999999,
+    "iscMax": 14.250513
+  }
+}

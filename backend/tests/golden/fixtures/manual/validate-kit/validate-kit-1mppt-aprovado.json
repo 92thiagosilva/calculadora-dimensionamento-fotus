@@ -1,0 +1,116 @@
+{
+  "header": {
+    "scenario_id": "validate-kit-1mppt-aprovado",
+    "descricao": "Cenario APROVADO: inversor 1 MPPT, auto config, sem overload.",
+    "module_label": "HANERSUN | CP18-72H | 555W MONO (21,48%)",
+    "inverter_label": "GROWATT | MIC 3000 TL-X 220V (1 MPPT)",
+    "preset": "Conservador",
+    "autor": "fixture-generator",
+    "html_sha256": "14e1ee1bcc32c002e83bda2511a9fdb3753f551d98a3061163576be8d6508ac7"
+  },
+  "inputs": {
+    "inv": {
+      "brand": "GROWATT",
+      "model": "MIC 3000 TL-X 220V (1 MPPT)",
+      "label": "GROWATT | MIC 3000 TL-X 220V (1 MPPT)",
+      "p_nom": 3000,
+      "p_max_cc": 4200,
+      "mppt_currents": [
+        {
+          "imax": 13,
+          "isc": 16
+        }
+      ],
+      "v_max": 550,
+      "v_mpp_min": 250,
+      "v_mpp_max": 500,
+      "num_mppt": 1,
+      "lin_max": [
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "num_inputs": 1,
+      "protection": "DPS Tipo III",
+      "tensao": 220,
+      "fase": "Monofásico"
+    },
+    "mod": {
+      "brand": "HANERSUN",
+      "model": "CP18-72H | 555W MONO (21,48%)",
+      "label": "HANERSUN | CP18-72H | 555W MONO (21,48%)",
+      "pnom": 555,
+      "isc": 13.86,
+      "voc": 50.22,
+      "imp": 12.98,
+      "vmp": 42.76,
+      "coef_v": -0.275,
+      "coef_i": 0.045,
+      "coef_pmp": -0.35,
+      "efic": 21.48,
+      "altura_mm": 2278,
+      "largura_mm": 1134,
+      "espessura_mm": 30,
+      "peso_kg": 28.5
+    },
+    "tMin": -5,
+    "tMax": 70,
+    "cfg": [
+      {
+        "series": 9,
+        "strings": 1
+      }
+    ]
+  },
+  "outputs": {
+    "perMppt": [
+      {
+        "mpptIdx": 0,
+        "series": 9,
+        "strings": 1,
+        "limits": {
+          "maxSeriesVoc": 10,
+          "maxSeriesVmpp": 11,
+          "minSeries": 7,
+          "maxSeries": 10,
+          "maxStrings": 0,
+          "maxStringsByImax": 0,
+          "maxStringsByIsc": 1,
+          "linMax": 1,
+          "vocMax": 54.36315,
+          "vmpMin": 36.0253,
+          "impMax": 13.242845,
+          "iscMax": 14.140665,
+          "imaxMppt": 13,
+          "iscMppt": 16,
+          "limitingFactor": "imax"
+        },
+        "seriesOk": true,
+        "stringsOk": false,
+        "badge": "Verificar",
+        "vocArranjo": 489.26835,
+        "vmpArranjo": 324.2277,
+        "impArranjo": 13.242845
+      }
+    ],
+    "totalMods": 9,
+    "totalKwp": 4.995,
+    "ratioCcCa": 167,
+    "overloadKw": 4.2,
+    "overloadFail": true,
+    "allMpptOk": false,
+    "overallBadge": "Reprovado",
+    "wiringNote": "Overload excedido: 5.00 kWp > 4.2 kWp (limite CC do inversor). Reduza modulos ou troque o inversor."
+  }
+}

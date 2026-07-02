@@ -1,0 +1,38 @@
+{
+  "header": {
+    "scenario_id": "corrections-brand-ronma",
+    "descricao": "Correcoes termicas (preset Conservador) para 1 modulo da marca RONMA.",
+    "module_label": "RONMA  | RM-570W-182M/144TB | 570W MONO N-TYPE BIFACIAL DG (22,06%)",
+    "preset": "Conservador",
+    "autor": "fixture-generator",
+    "html_sha256": "14e1ee1bcc32c002e83bda2511a9fdb3753f551d98a3061163576be8d6508ac7"
+  },
+  "inputs": {
+    "mod": {
+      "brand": "RONMA",
+      "model": "RM-570W-182M/144TB | 570W MONO N-TYPE BIFACIAL DG (22,06%)",
+      "label": "RONMA  | RM-570W-182M/144TB | 570W MONO N-TYPE BIFACIAL DG (22,06%)",
+      "pnom": 570,
+      "isc": 14.25,
+      "voc": 51.07,
+      "imp": 13.48,
+      "vmp": 42.29,
+      "coef_v": -0.25,
+      "coef_i": 0.045,
+      "coef_pmp": -0.29,
+      "efic": 22.06,
+      "altura_mm": 2278,
+      "largura_mm": 1134,
+      "espessura_mm": 35,
+      "peso_kg": 32
+    },
+    "tMin": -5,
+    "tMax": 70
+  },
+  "outputs": {
+    "vocMax": 54.90025,
+    "vmpMin": 36.771155,
+    "impMax": 13.752970000000001,
+    "iscMax": 14.538562500000001
+  }
+}

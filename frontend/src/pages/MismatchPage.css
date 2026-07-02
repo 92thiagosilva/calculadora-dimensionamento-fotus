@@ -1,0 +1,88 @@
+.mismatch-page {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.mismatch-pickers {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 1.25rem;
+}
+
+.mismatch-result {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.verdict-banner {
+  border-radius: var(--radius-lg);
+  padding: 1.5rem 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  box-shadow: var(--shadow-md);
+}
+
+.verdict-banner--success {
+  background: linear-gradient(135deg, #2e7d32 0%, #3f9645 100%);
+  color: #fff;
+}
+
+.verdict-banner--danger {
+  background: linear-gradient(135deg, #c62828 0%, #d84343 100%);
+  color: #fff;
+}
+
+.verdict-banner__label {
+  font-size: 2rem;
+  font-weight: 800;
+}
+
+.verdict-banner__subtitle {
+  font-size: 0.95rem;
+  opacity: 0.95;
+}
+
+.corrected-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1rem;
+}
+
+.corrected-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  align-items: flex-start;
+}
+
+.corrected-card__label {
+  font-weight: 800;
+  color: var(--color-navy);
+}
+
+.corrected-card__values {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  font-size: 0.95rem;
+}
+
+.delta-check {
+  font-weight: 700;
+  font-size: 0.9rem;
+  padding: 0.25em 0.6em;
+  border-radius: 6px;
+}
+
+.delta-check--ok {
+  background: var(--color-success-bg);
+  color: var(--color-success);
+}
+
+.delta-check--bad {
+  background: var(--color-danger-bg);
+  color: var(--color-danger);
+}

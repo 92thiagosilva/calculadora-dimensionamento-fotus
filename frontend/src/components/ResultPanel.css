@@ -1,0 +1,155 @@
+.result-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.result-banner {
+  border-radius: var(--radius-lg);
+  padding: 1.75rem 2rem;
+  display: flex;
+  align-items: center;
+  gap: 1.75rem;
+  flex-wrap: wrap;
+  box-shadow: var(--shadow-md);
+}
+
+.result-banner--success {
+  background: linear-gradient(135deg, #2e7d32 0%, #3f9645 100%);
+  color: #fff;
+}
+
+.result-banner--danger {
+  background: linear-gradient(135deg, #c62828 0%, #d84343 100%);
+  color: #fff;
+}
+
+.result-banner--warning {
+  background: linear-gradient(135deg, #b26a00 0%, #cf7f0a 100%);
+  color: #fff;
+}
+
+.result-banner--neutral {
+  background: var(--color-navy);
+  color: #fff;
+}
+
+.result-banner__badge {
+  font-size: 2rem;
+  font-weight: 800;
+  padding: 0.4em 0.9em;
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.18);
+  flex-shrink: 0;
+}
+
+.result-banner__summary {
+  flex: 1;
+  min-width: 220px;
+}
+
+.result-banner__kit {
+  font-weight: 700;
+  font-size: 1.05rem;
+  margin: 0 0 0.5rem;
+}
+
+.result-banner__stats {
+  display: flex;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+  font-size: 0.92rem;
+  opacity: 0.95;
+}
+
+.result-banner__stats strong {
+  font-size: 1.1rem;
+  margin-right: 0.3em;
+}
+
+.result-note {
+  font-size: 0.95rem;
+}
+
+.result-panel__section-title {
+  margin-bottom: 0.25rem;
+}
+
+.mppt-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1rem;
+}
+
+.mppt-card {
+  padding: 1.1rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.mppt-card__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.mppt-card__title {
+  font-weight: 800;
+  color: var(--color-navy);
+}
+
+.mppt-card__config {
+  font-size: 0.88rem;
+  color: var(--color-text-muted);
+}
+
+.mppt-card__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.mppt-card__table td {
+  padding: 0.3em 0;
+  border-top: 1px solid var(--color-border);
+}
+
+.mppt-card__table td:first-child {
+  color: var(--color-text-muted);
+}
+
+.mppt-card__table td:last-child {
+  text-align: right;
+  font-weight: 700;
+}
+
+.status-dot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.1rem;
+  height: 1.1rem;
+  border-radius: 50%;
+  font-size: 0.65rem;
+  font-weight: 800;
+  margin-left: 0.3em;
+}
+
+.status-dot--ok {
+  background: var(--color-success-bg);
+  color: var(--color-success);
+}
+
+.status-dot--warn {
+  background: var(--color-warning-bg);
+  color: var(--color-warning);
+}
+
+.mppt-card__tolerance-tag {
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--color-warning);
+  text-align: right;
+}

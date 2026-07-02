@@ -1,0 +1,38 @@
+{
+  "header": {
+    "scenario_id": "corrections-brand-yingli",
+    "descricao": "Correcoes termicas (preset Conservador) para 1 modulo da marca YINGLI.",
+    "module_label": "YINGLI | YGE 72 - 330W POLI",
+    "preset": "Conservador",
+    "autor": "fixture-generator",
+    "html_sha256": "14e1ee1bcc32c002e83bda2511a9fdb3753f551d98a3061163576be8d6508ac7"
+  },
+  "inputs": {
+    "mod": {
+      "brand": "YINGLI",
+      "model": "YGE 72 - 330W POLI",
+      "label": "YINGLI | YGE 72 - 330W POLI",
+      "pnom": 330,
+      "isc": 9.29,
+      "voc": 46.4,
+      "imp": 8.84,
+      "vmp": 37.4,
+      "coef_v": -0.32,
+      "coef_i": 0.05,
+      "coef_pmp": -0.42,
+      "efic": null,
+      "altura_mm": null,
+      "largura_mm": null,
+      "espessura_mm": null,
+      "peso_kg": null
+    },
+    "tMin": -5,
+    "tMax": 70
+  },
+  "outputs": {
+    "vocMax": 50.854400000000005,
+    "vmpMin": 30.331400000000002,
+    "impMax": 9.0389,
+    "iscMax": 9.499025
+  }
+}

@@ -1,0 +1,38 @@
+{
+  "header": {
+    "scenario_id": "corrections-brand-helius",
+    "descricao": "Correcoes termicas (preset Conservador) para 1 modulo da marca HELIUS.",
+    "module_label": "HELIUS | HMB132T10R 570HL | 570W MONO N-TYPE BIFACIAL DG (22,10%)",
+    "preset": "Conservador",
+    "autor": "fixture-generator",
+    "html_sha256": "14e1ee1bcc32c002e83bda2511a9fdb3753f551d98a3061163576be8d6508ac7"
+  },
+  "inputs": {
+    "mod": {
+      "brand": "HELIUS",
+      "model": "HMB132T10R 570HL | 570W MONO N-TYPE BIFACIAL DG (22,10%)",
+      "label": "HELIUS | HMB132T10R 570HL | 570W MONO N-TYPE BIFACIAL DG (22,10%)",
+      "pnom": 570,
+      "isc": 15.1,
+      "voc": 47.77,
+      "imp": 14.24,
+      "vmp": 40.03,
+      "coef_v": -0.26,
+      "coef_i": 0.046,
+      "coef_pmp": -0.3,
+      "efic": 22.1,
+      "altura_mm": 2278,
+      "largura_mm": 1134,
+      "espessura_mm": 30,
+      "peso_kg": 31.8
+    },
+    "tMin": -5,
+    "tMax": 70
+  },
+  "outputs": {
+    "vocMax": 51.49606000000001,
+    "vmpMin": 34.62595,
+    "impMax": 14.534768,
+    "iscMax": 15.412569999999999
+  }
+}

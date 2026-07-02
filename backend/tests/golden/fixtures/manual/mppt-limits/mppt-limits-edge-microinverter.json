@@ -1,0 +1,78 @@
+{
+  "header": {
+    "scenario_id": "mppt-limits-edge-microinverter",
+    "descricao": "Edge case: microinversor (p_nom baixo ou categoria explicita).",
+    "module_label": "HANERSUN | CP18-72H | 555W MONO (21,48%)",
+    "inverter_label": "GOODWE | GW1500-XS 220V (1 MPPT)",
+    "preset": "Conservador",
+    "autor": "fixture-generator",
+    "html_sha256": "14e1ee1bcc32c002e83bda2511a9fdb3753f551d98a3061163576be8d6508ac7"
+  },
+  "inputs": {
+    "inv": {
+      "brand": "GOODWE",
+      "model": "GW1500-XS 220V (1 MPPT)",
+      "label": "GOODWE | GW1500-XS 220V (1 MPPT)",
+      "p_nom": 1500,
+      "p_max_cc": 1950,
+      "mppt_currents": [
+        {
+          "imax": 11,
+          "isc": 13.8
+        }
+      ],
+      "v_max": 500,
+      "v_mpp_min": 50,
+      "v_mpp_max": 450,
+      "num_mppt": 1,
+      "lin_max": [
+        1,
+        0,
+        0,
+        0
+      ],
+      "num_inputs": null,
+      "protection": null,
+      "tensao": 220,
+      "fase": null
+    },
+    "mod": {
+      "brand": "HANERSUN",
+      "model": "CP18-72H | 555W MONO (21,48%)",
+      "label": "HANERSUN | CP18-72H | 555W MONO (21,48%)",
+      "pnom": 555,
+      "isc": 13.86,
+      "voc": 50.22,
+      "imp": 12.98,
+      "vmp": 42.76,
+      "coef_v": -0.275,
+      "coef_i": 0.045,
+      "coef_pmp": -0.35,
+      "efic": 21.48,
+      "altura_mm": 2278,
+      "largura_mm": 1134,
+      "espessura_mm": 30,
+      "peso_kg": 28.5
+    },
+    "tMin": -5,
+    "tMax": 70,
+    "mpptIdx": 0
+  },
+  "outputs": {
+    "maxSeriesVoc": 9,
+    "maxSeriesVmpp": 10,
+    "minSeries": 2,
+    "maxSeries": 9,
+    "maxStrings": 0,
+    "maxStringsByImax": 0,
+    "maxStringsByIsc": 0,
+    "linMax": 1,
+    "vocMax": 54.36315,
+    "vmpMin": 36.0253,
+    "impMax": 13.242845,
+    "iscMax": 14.140665,
+    "imaxMppt": 11,
+    "iscMppt": 13.8,
+    "limitingFactor": "imax"
+  }
+}

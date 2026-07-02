@@ -1,0 +1,38 @@
+{
+  "header": {
+    "scenario_id": "corrections-brand-jinko",
+    "descricao": "Correcoes termicas (preset Conservador) para 1 modulo da marca JINKO.",
+    "module_label": "JINKO | JKM580-72HL4M-BDV | 580W MONO N-TYPE BIFACIAL DG (22,45%)",
+    "preset": "Conservador",
+    "autor": "fixture-generator",
+    "html_sha256": "14e1ee1bcc32c002e83bda2511a9fdb3753f551d98a3061163576be8d6508ac7"
+  },
+  "inputs": {
+    "mod": {
+      "brand": "JINKO",
+      "model": "JKM580-72HL4M-BDV | 580W MONO N-TYPE BIFACIAL DG (22,45%)",
+      "label": "JINKO | JKM580-72HL4M-BDV | 580W MONO N-TYPE BIFACIAL DG (22,45%)",
+      "pnom": 580,
+      "isc": 13.95,
+      "voc": 52.5,
+      "imp": 13.22,
+      "vmp": 43.88,
+      "coef_v": -0.25,
+      "coef_i": 0.045,
+      "coef_pmp": -0.29,
+      "efic": 22.45,
+      "altura_mm": 2278,
+      "largura_mm": 1134,
+      "espessura_mm": 30,
+      "peso_kg": 31
+    },
+    "tMin": -5,
+    "tMax": 70
+  },
+  "outputs": {
+    "vocMax": 56.4375,
+    "vmpMin": 38.15366,
+    "impMax": 13.487705000000002,
+    "iscMax": 14.232487500000001
+  }
+}

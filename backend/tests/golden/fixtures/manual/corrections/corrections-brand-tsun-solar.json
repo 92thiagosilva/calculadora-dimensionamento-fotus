@@ -1,0 +1,38 @@
+{
+  "header": {
+    "scenario_id": "corrections-brand-tsun-solar",
+    "descricao": "Correcoes termicas (preset Conservador) para 1 modulo da marca TSUN SOLAR.",
+    "module_label": "TSUN SOLAR | TS585S8D-132NT | 585W MONO N-TYPE (22,60%)",
+    "preset": "Conservador",
+    "autor": "fixture-generator",
+    "html_sha256": "14e1ee1bcc32c002e83bda2511a9fdb3753f551d98a3061163576be8d6508ac7"
+  },
+  "inputs": {
+    "mod": {
+      "brand": "TSUN SOLAR",
+      "model": "TS585S8D-132NT | 585W MONO N-TYPE (22,60%)",
+      "label": "TSUN SOLAR | TS585S8D-132NT | 585W MONO N-TYPE (22,60%)",
+      "pnom": 585,
+      "isc": 15.26,
+      "voc": 48.38,
+      "imp": 14.4,
+      "vmp": 40.63,
+      "coef_v": -0.26,
+      "coef_i": 0.046,
+      "coef_pmp": -0.3,
+      "efic": 22.6,
+      "altura_mm": 2278,
+      "largura_mm": 1134,
+      "espessura_mm": 30,
+      "peso_kg": 27.5
+    },
+    "tMin": -5,
+    "tMax": 70
+  },
+  "outputs": {
+    "vocMax": 52.15364,
+    "vmpMin": 35.14495,
+    "impMax": 14.69808,
+    "iscMax": 15.575881999999998
+  }
+}

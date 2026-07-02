@@ -1,0 +1,38 @@
+{
+  "header": {
+    "scenario_id": "corrections-brand-honor",
+    "descricao": "Correcoes termicas (preset Conservador) para 1 modulo da marca HONOR.",
+    "module_label": "HONOR |  HY-M12/132G-700W | 700W MONO N-TYPE BIFACIAL DG (22,5%)",
+    "preset": "Conservador",
+    "autor": "fixture-generator",
+    "html_sha256": "14e1ee1bcc32c002e83bda2511a9fdb3753f551d98a3061163576be8d6508ac7"
+  },
+  "inputs": {
+    "mod": {
+      "brand": "HONOR",
+      "model": "HY-M12/132G-700W | 700W MONO N-TYPE BIFACIAL DG (22,5%)",
+      "label": "HONOR |  HY-M12/132G-700W | 700W MONO N-TYPE BIFACIAL DG (22,5%)",
+      "pnom": 700,
+      "isc": 18.49,
+      "voc": 47.9,
+      "imp": 17.51,
+      "vmp": 40,
+      "coef_v": -0.223,
+      "coef_i": 0.026,
+      "coef_pmp": -0.243,
+      "efic": 22.5,
+      "altura_mm": 2384,
+      "largura_mm": 1303,
+      "espessura_mm": 30,
+      "peso_kg": 36.4
+    },
+    "tMin": -5,
+    "tMax": 70
+  },
+  "outputs": {
+    "vocMax": 51.10451,
+    "vmpMin": 35.626,
+    "impMax": 17.714867,
+    "iscMax": 18.706333
+  }
+}

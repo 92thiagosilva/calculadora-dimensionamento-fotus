@@ -1,0 +1,38 @@
+{
+  "header": {
+    "scenario_id": "corrections-brand-znshine",
+    "descricao": "Correcoes termicas (preset Conservador) para 1 modulo da marca ZNSHINE.",
+    "module_label": "ZNSHINE | ZXMR-UHLD132 | 565W MONO N-TYPE (21,9%)",
+    "preset": "Conservador",
+    "autor": "fixture-generator",
+    "html_sha256": "14e1ee1bcc32c002e83bda2511a9fdb3753f551d98a3061163576be8d6508ac7"
+  },
+  "inputs": {
+    "mod": {
+      "brand": "ZNSHINE",
+      "model": "ZXMR-UHLD132 | 565W MONO N-TYPE (21,9%)",
+      "label": "ZNSHINE | ZXMR-UHLD132 | 565W MONO N-TYPE (21,9%)",
+      "pnom": 565,
+      "isc": 15.44,
+      "voc": 46.6,
+      "imp": 14.6,
+      "vmp": 38.7,
+      "coef_v": -0.23,
+      "coef_i": 0.045,
+      "coef_pmp": -0.28,
+      "efic": 21.9,
+      "altura_mm": 2278,
+      "largura_mm": 1134,
+      "espessura_mm": 30,
+      "peso_kg": 31.5
+    },
+    "tMin": -5,
+    "tMax": 70
+  },
+  "outputs": {
+    "vocMax": 49.8154,
+    "vmpMin": 33.823800000000006,
+    "impMax": 14.895650000000002,
+    "iscMax": 15.75266
+  }
+}

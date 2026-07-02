@@ -1,0 +1,38 @@
+{
+  "header": {
+    "scenario_id": "corrections-brand-renesola",
+    "descricao": "Correcoes termicas (preset Conservador) para 1 modulo da marca RENESOLA.",
+    "module_label": "RENESOLA | RS6-555MBG-E3 | 555W MONO BIFACIAL (21,48%)",
+    "preset": "Conservador",
+    "autor": "fixture-generator",
+    "html_sha256": "14e1ee1bcc32c002e83bda2511a9fdb3753f551d98a3061163576be8d6508ac7"
+  },
+  "inputs": {
+    "mod": {
+      "brand": "RENESOLA",
+      "model": "RS6-555MBG-E3 | 555W MONO BIFACIAL (21,48%)",
+      "label": "RENESOLA | RS6-555MBG-E3 | 555W MONO BIFACIAL (21,48%)",
+      "pnom": 555,
+      "isc": 14.04,
+      "voc": 49.95,
+      "imp": 13.19,
+      "vmp": 42.1,
+      "coef_v": -0.27,
+      "coef_i": 0.04,
+      "coef_pmp": -0.35,
+      "efic": 21.48,
+      "altura_mm": 2278,
+      "largura_mm": 1134,
+      "espessura_mm": 30,
+      "peso_kg": 32.8
+    },
+    "tMin": -5,
+    "tMax": 70
+  },
+  "outputs": {
+    "vocMax": 53.99595,
+    "vmpMin": 35.46925,
+    "impMax": 13.42742,
+    "iscMax": 14.29272
+  }
+}

@@ -1,0 +1,38 @@
+{
+  "header": {
+    "scenario_id": "corrections-brand-byd",
+    "descricao": "Correcoes termicas (preset Conservador) para 1 modulo da marca BYD.",
+    "module_label": "BYD | MGTK-36 | 450W MONO BIFACIAL (20,67%)",
+    "preset": "Conservador",
+    "autor": "fixture-generator",
+    "html_sha256": "14e1ee1bcc32c002e83bda2511a9fdb3753f551d98a3061163576be8d6508ac7"
+  },
+  "inputs": {
+    "mod": {
+      "brand": "BYD",
+      "model": "MGTK-36 | 450W MONO BIFACIAL (20,67%)",
+      "label": "BYD | MGTK-36 | 450W MONO BIFACIAL (20,67%)",
+      "pnom": 450,
+      "isc": 11.64,
+      "voc": 49.59,
+      "imp": 10.84,
+      "vmp": 41.58,
+      "coef_v": -0.285,
+      "coef_i": 0.051,
+      "coef_pmp": -0.352,
+      "efic": 20.67,
+      "altura_mm": 2094,
+      "largura_mm": 1038,
+      "espessura_mm": 35,
+      "peso_kg": 24.1
+    },
+    "tMin": -5,
+    "tMax": 70
+  },
+  "outputs": {
+    "vocMax": 53.829945,
+    "vmpMin": 34.993728,
+    "impMax": 11.088778,
+    "iscMax": 11.907138000000002
+  }
+}

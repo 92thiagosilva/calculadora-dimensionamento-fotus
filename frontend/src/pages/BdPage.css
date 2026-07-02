@@ -1,0 +1,91 @@
+.bd-page {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.bd-page__banner {
+  font-size: 0.92rem;
+}
+
+.bd-tab {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.bd-tab__toolbar {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.bd-tab__toolbar .input {
+  flex: 1 1 260px;
+}
+
+.bd-tab__row-actions {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
+}
+
+.bd-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.bd-form__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.bd-form__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--color-border);
+}
+
+.bd-form__mppts {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  border-top: 1px solid var(--color-border);
+  padding-top: 1.25rem;
+}
+
+.bd-form__mppts-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.bd-form__mppts-header h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.bd-form__mppt-row {
+  display: flex;
+  gap: 0.75rem;
+  align-items: end;
+  background: var(--color-panel);
+  border-radius: var(--radius-sm);
+  padding: 0.85rem;
+}
+
+.bd-form__mppt-label {
+  font-weight: 800;
+  color: var(--color-navy);
+  min-width: 4.5rem;
+  padding-bottom: 0.6em;
+}
+
+.bd-form__mppt-row .field {
+  flex: 1;
+}

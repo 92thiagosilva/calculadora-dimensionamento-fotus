@@ -1,0 +1,96 @@
+.suggestion-mode {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.suggestion-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+}
+
+.suggestion-form__row {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.suggestion-form__row .field {
+  flex: 1 1 200px;
+}
+
+.suggestion-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 1rem;
+}
+
+.suggestion-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.suggestion-card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.suggestion-card__kwp {
+  font-weight: 800;
+  color: var(--color-navy);
+}
+
+.suggestion-card__kit {
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.suggestion-card__kit p {
+  margin: 0;
+}
+
+.suggestion-card__kit strong {
+  color: var(--color-navy);
+}
+
+.suggestion-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: -0.5rem;
+}
+
+.suggestion-count {
+  margin: 0;
+}
+
+.suggestion-toolbar__sort {
+  flex-direction: row;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.suggestion-toolbar__sort label {
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+
+.suggestion-toolbar__sort .select {
+  min-width: 200px;
+}
+
+.suggestion-card__stats {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+}

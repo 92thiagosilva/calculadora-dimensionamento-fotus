@@ -1,0 +1,38 @@
+{
+  "header": {
+    "scenario_id": "corrections-brand-pulling-by-leapton",
+    "descricao": "Correcoes termicas (preset Conservador) para 1 modulo da marca PULLING, BY LEAPTON.",
+    "module_label": "PULLING, BY LEAPTON | PU560SPM101 | 560W MONO (21,68%)",
+    "preset": "Conservador",
+    "autor": "fixture-generator",
+    "html_sha256": "14e1ee1bcc32c002e83bda2511a9fdb3753f551d98a3061163576be8d6508ac7"
+  },
+  "inputs": {
+    "mod": {
+      "brand": "PULLING, BY LEAPTON",
+      "model": "PU560SPM101 | 560W MONO (21,68%)",
+      "label": "PULLING, BY LEAPTON | PU560SPM101 | 560W MONO (21,68%)",
+      "pnom": 560,
+      "isc": 14.11,
+      "voc": 50.2,
+      "imp": 13.33,
+      "vmp": 42,
+      "coef_v": -0.28,
+      "coef_i": 0.05,
+      "coef_pmp": -0.36,
+      "efic": 21.68,
+      "altura_mm": 2278,
+      "largura_mm": 1134,
+      "espessura_mm": 30,
+      "peso_kg": 27
+    },
+    "tMin": -5,
+    "tMax": 70
+  },
+  "outputs": {
+    "vocMax": 54.41680000000001,
+    "vmpMin": 35.196,
+    "impMax": 13.629925,
+    "iscMax": 14.427475
+  }
+}

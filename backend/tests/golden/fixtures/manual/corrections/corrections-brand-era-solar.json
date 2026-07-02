@@ -1,0 +1,38 @@
+{
+  "header": {
+    "scenario_id": "corrections-brand-era-solar",
+    "descricao": "Correcoes termicas (preset Conservador) para 1 modulo da marca ERA SOLAR.",
+    "module_label": "ERA SOLAR | ERA-PRO-72HD-CF | 590W | MONO N-TYPE BIFACIAL DG FRAME DE FIBRA DE VIDRO (22,83%)",
+    "preset": "Conservador",
+    "autor": "fixture-generator",
+    "html_sha256": "14e1ee1bcc32c002e83bda2511a9fdb3753f551d98a3061163576be8d6508ac7"
+  },
+  "inputs": {
+    "mod": {
+      "brand": "ERA SOLAR",
+      "model": "ERA-PRO-72HD-CF | 590W | MONO N-TYPE BIFACIAL DG FRAME DE FIBRA DE VIDRO (22,83%)",
+      "label": "ERA SOLAR | ERA-PRO-72HD-CF | 590W | MONO N-TYPE BIFACIAL DG FRAME DE FIBRA DE VIDRO (22,83%)",
+      "pnom": 590,
+      "isc": 14.03,
+      "voc": 52.9,
+      "imp": 13.37,
+      "vmp": 44.15,
+      "coef_v": -0.259,
+      "coef_i": 0.035,
+      "coef_pmp": -0.2482,
+      "efic": 22.83,
+      "altura_mm": 2278,
+      "largura_mm": 1134,
+      "espessura_mm": 30,
+      "peso_kg": 30.5
+    },
+    "tMin": -5,
+    "tMax": 70
+  },
+  "outputs": {
+    "vocMax": 57.01033,
+    "vmpMin": 39.218886499999996,
+    "impMax": 13.580577499999999,
+    "iscMax": 14.250972499999998
+  }
+}

@@ -1,0 +1,38 @@
+{
+  "header": {
+    "scenario_id": "corrections-brand-solar-n-plus",
+    "descricao": "Correcoes termicas (preset Conservador) para 1 modulo da marca SOLAR N PLUS.",
+    "module_label": "SOLAR N PLUS | SP-N16-144HG-560W | 560W MONO N-TYPE BIFACIAL DG FRAME DE FIBRA DE VIDRO (21,70%)",
+    "preset": "Conservador",
+    "autor": "fixture-generator",
+    "html_sha256": "14e1ee1bcc32c002e83bda2511a9fdb3753f551d98a3061163576be8d6508ac7"
+  },
+  "inputs": {
+    "mod": {
+      "brand": "SOLAR N PLUS",
+      "model": "SP-N16-144HG-560W | 560W MONO N-TYPE BIFACIAL DG FRAME DE FIBRA DE VIDRO (21,70%)",
+      "label": "SOLAR N PLUS | SP-N16-144HG-560W | 560W MONO N-TYPE BIFACIAL DG FRAME DE FIBRA DE VIDRO (21,70%)",
+      "pnom": 560,
+      "isc": 13.37,
+      "voc": 51.8,
+      "imp": 12.63,
+      "vmp": 44.35,
+      "coef_v": -0.25,
+      "coef_i": 0.045,
+      "coef_pmp": -0.29,
+      "efic": 21.7,
+      "altura_mm": 2278,
+      "largura_mm": 1134,
+      "espessura_mm": 30,
+      "peso_kg": 32.5
+    },
+    "tMin": -5,
+    "tMax": 70
+  },
+  "outputs": {
+    "vocMax": 55.684999999999995,
+    "vmpMin": 38.562325,
+    "impMax": 12.885757500000002,
+    "iscMax": 13.6407425
+  }
+}
