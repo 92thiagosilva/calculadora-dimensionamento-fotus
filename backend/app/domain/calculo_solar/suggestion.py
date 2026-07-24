@@ -198,6 +198,15 @@ def suggest_kit(
                 continue
             if inv.p_max_cc is None or inv.v_max is None:
                 continue
+            # A meta e um alvo de dimensionamento, nao so um criterio de
+            # ordenacao — inversores fora de uma janela razoavel [0.5x,
+            # 2x] da meta de kW do inversor nem entram na busca (evita
+            # sugerir, por ex., um inversor de 2,25 kW quando a meta e
+            # 10 kW so porque ele tecnicamente passa na regra dos 70%).
+            if target_inverter_kw is not None:
+                inv_kw_check = inv.p_nom / 1000
+                if not (target_inverter_kw * 0.5 <= inv_kw_check <= target_inverter_kw * 2.0):
+                    continue
 
             adjustments = adjustments_by_inverter_id.get(inv.inverter_id, default_adjustments)
             adjusted_inv = build_adjusted_inverter(inv, adjustments)
@@ -236,6 +245,13 @@ def suggest_kit(
                     ressalva_reasons = ressalva_reasons + [ratio_reason]
                     if validation.overall_badge == "Aprovado":
                         validation = dataclasses.replace(validation, overall_badge="Aprovado com ressalva")  # type: ignore[arg-type]
+
+                # Mesma janela razoavel [0.5x, 2x], agora para o total_kwp
+                # do candidato quando a meta e em kWp de modulos (o filtro
+                # por kW do inversor ja aconteceu acima, por inversor).
+                if target_kwp is not None:
+                    if not (target_kwp * 0.5 <= validation.total_kwp <= target_kwp * 2.0):
+                        continue
 
                 kwp_key = round(validation.total_kwp, 2)
                 if kwp_key in seen_kwp:
