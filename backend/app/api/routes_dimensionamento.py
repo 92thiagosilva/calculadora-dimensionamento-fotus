@@ -14,11 +14,12 @@ from app.api.schemas import (
     ValidateKitRequest,
 )
 from app.domain.calculo_solar.auto_config import auto_config_strings
-from app.domain.calculo_solar.commercial_rules import apply_imax_tolerance, check_min_dc_ac_ratio
+from app.domain.calculo_solar.calc_adjustments import build_adjusted_inverter, validate_kit_with_adjustments
+from app.domain.calculo_solar.commercial_rules import check_min_dc_ac_ratio, recompute_badge_from_per_mppt
 from app.domain.calculo_solar.corrections import apply_module_corrections
 from app.domain.calculo_solar.mppt_limits import calculate_mppt_limits
 from app.domain.calculo_solar.suggestion import suggest_kit
-from app.domain.calculo_solar.validate_kit import MpptConfigInput, validate_kit
+from app.domain.calculo_solar.validate_kit import MpptConfigInput
 from app.infra import repository
 from app.infra.db import get_session
 
@@ -73,6 +74,21 @@ def correct_module_specs(
     return vars(result)
 
 
+@router.get("/effective-adjustments")
+def effective_adjustments(
+    inverter_id: int,
+    db: Session = Depends(get_session),
+    _user: CurrentUser = Depends(get_current_user),
+) -> dict:
+    """Ajustes de calculo efetivos (global + override, ja mesclados)
+    para este inversor — usado pelo frontend para explicar ao vendedor,
+    em tempo real, o motivo de uma eventual ressalva (ex.: qual e a
+    tolerancia de Imax configurada)."""
+    _get_inverter(db, inverter_id)
+    adj = repository.get_effective_adjustments(db, inverter_id)
+    return vars(adj)
+
+
 @router.get("/mppt-limits")
 def mppt_limits(
     inverter_id: int,
@@ -85,8 +101,10 @@ def mppt_limits(
 ) -> dict:
     inv = _get_inverter(db, inverter_id)
     mod = _get_module(db, module_id)
+    adjustments = repository.get_effective_adjustments(db, inverter_id)
+    adjusted_inv = build_adjusted_inverter(inv, adjustments)
     with map_tool_errors():
-        result = calculate_mppt_limits(inv, mod, t_min, t_max, mppt_idx)
+        result = calculate_mppt_limits(adjusted_inv, mod, t_min, t_max, mppt_idx)
     return vars(result)
 
 
@@ -98,8 +116,10 @@ def auto_config(
 ) -> dict:
     inv = _get_inverter(db, body.inverter_id)
     mod = _get_module(db, body.module_id)
+    adjustments = repository.get_effective_adjustments(db, body.inverter_id)
+    adjusted_inv = build_adjusted_inverter(inv, adjustments)
     with map_tool_errors():
-        result = auto_config_strings(inv, mod, body.t_min, body.t_max)
+        result = auto_config_strings(adjusted_inv, mod, body.t_min, body.t_max)
     return {"mppt_config": [vars(c) for c in result]}
 
 
@@ -115,14 +135,15 @@ def validate_kit_endpoint(
         MpptConfigInput(series=c.series, strings=c.strings) if c is not None else None
         for c in body.mppt_config
     ]
+    adjustments = repository.get_effective_adjustments(db, body.inverter_id)
     with map_tool_errors():
-        result = validate_kit(inv, mod, body.t_min, body.t_max, cfg)
-    result, tolerance_flags = apply_imax_tolerance(result)
+        result, ressalva_reasons = validate_kit_with_adjustments(inv, mod, body.t_min, body.t_max, cfg, adjustments)
+    result = recompute_badge_from_per_mppt(result)
     out = vars(result).copy()
-    out["per_mppt"] = [
-        {**vars(p), "limits": vars(p.limits), "imax_tolerance_applied": tolerance_flags[idx]}
-        for idx, p in enumerate(result.per_mppt)
-    ]
+    out["per_mppt"] = [{**vars(p), "limits": vars(p.limits)} for p in result.per_mppt]
+    if ressalva_reasons and out["overall_badge"] == "Aprovado":
+        out["overall_badge"] = "Aprovado com ressalva"
+    out["ressalva_reasons"] = ressalva_reasons
     _apply_dc_ac_ratio_rule(out, inv)
     return out
 
@@ -135,6 +156,7 @@ def suggest_kit_endpoint(
 ) -> dict:
     modules = repository.list_modules(db)
     inverters = repository.list_inverters(db)
+    adjustments_by_inverter_id = repository.get_all_effective_adjustments(db)
     with map_tool_errors():
         suggestions = suggest_kit(
             modules,
@@ -149,14 +171,13 @@ def suggest_kit_endpoint(
             inverter_min_kw=body.inverter_min_kw,
             inverter_max_kw=body.inverter_max_kw,
             max_suggestions=body.max_suggestions,
+            adjustments_by_inverter_id=adjustments_by_inverter_id,
         )
     result = []
     for s in suggestions:
         val = vars(s.validation).copy()
-        val["per_mppt"] = [
-            {**vars(p), "limits": vars(p.limits), "imax_tolerance_applied": s.imax_tolerance_flags[idx]}
-            for idx, p in enumerate(s.validation.per_mppt)
-        ]
+        val["per_mppt"] = [{**vars(p), "limits": vars(p.limits)} for p in s.validation.per_mppt]
+        val["ressalva_reasons"] = s.ressalva_reasons
         result.append(
             {
                 "module_id": s.module_id,

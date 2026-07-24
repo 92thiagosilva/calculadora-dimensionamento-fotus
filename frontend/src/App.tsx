@@ -3,14 +3,15 @@ import { AuthProvider, useAuth } from './auth/AuthContext'
 import { Layout } from './components/Layout'
 import { RestrictedRoute } from './components/RestrictedRoute'
 import { Spinner } from './components/Spinner'
-import { LoginPage } from './pages/LoginPage'
+import { ErrorAlert } from './components/ErrorAlert'
 import { WizardPage } from './pages/WizardPage'
 import { AreaComparePage } from './pages/AreaComparePage'
 import { MismatchPage } from './pages/MismatchPage'
 import { BdPage } from './pages/BdPage'
+import { CalcSettingsPage } from './pages/CalcSettingsPage'
 
 function AppRoutes() {
-  const { user, loading } = useAuth()
+  const { user, loading, error } = useAuth()
 
   if (loading) {
     return (
@@ -20,8 +21,14 @@ function AppRoutes() {
     )
   }
 
+  // So chega aqui sem `user` se ate o login automatico (identidade padrao
+  // "comercial") falhou — normalmente por causa do backend estar fora do ar.
   if (!user) {
-    return <LoginPage />
+    return (
+      <div style={{ maxWidth: 480, margin: '4rem auto' }}>
+        <ErrorAlert message={error ?? 'Não foi possível conectar à API.'} />
+      </div>
+    )
   }
 
   return (
@@ -42,6 +49,14 @@ function AppRoutes() {
           element={
             <RestrictedRoute>
               <BdPage />
+            </RestrictedRoute>
+          }
+        />
+        <Route
+          path="/calc-settings"
+          element={
+            <RestrictedRoute>
+              <CalcSettingsPage />
             </RestrictedRoute>
           }
         />

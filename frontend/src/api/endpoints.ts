@@ -3,9 +3,14 @@ import type {
   AreaCompareResponse,
   AutoConfigResponse,
   BrandsOut,
+  CalcAdjustmentsOut,
+  CalcSettingsGlobalOut,
+  CalcSettingsIn,
   CorrectedModuleSpecs,
   Inverter,
+  InverterCalcSettingsRow,
   InverterIn,
+  InverterOverrideOut,
   MeOut,
   MismatchResponse,
   Module,
@@ -73,6 +78,22 @@ export interface SuggestKitBody {
 
 export const suggestKit = (body: SuggestKitBody) =>
   apiClient.post<SuggestKitResponse>('/api/dimensionamento/suggest-kit', body)
+
+export const getEffectiveAdjustments = (inverterId: number) =>
+  apiClient.get<CalcAdjustmentsOut>('/api/dimensionamento/effective-adjustments', { inverter_id: inverterId })
+
+// ---- Configurações de cálculo (restrito) ----
+export const getCalcSettingsGlobal = () =>
+  apiClient.get<CalcSettingsGlobalOut>('/api/admin/calc-settings/global')
+export const putCalcSettingsGlobal = (body: CalcSettingsIn) =>
+  apiClient.put<CalcSettingsGlobalOut>('/api/admin/calc-settings/global', body)
+
+export const listInverterCalcSettings = (params?: { brand?: string; search?: string }) =>
+  apiClient.get<InverterCalcSettingsRow[]>('/api/admin/calc-settings/inverters', params)
+export const putInverterCalcOverride = (inverterId: number, body: CalcSettingsIn) =>
+  apiClient.put<InverterOverrideOut>(`/api/admin/calc-settings/inverters/${inverterId}`, body)
+export const deleteInverterCalcOverride = (inverterId: number) =>
+  apiClient.delete<unknown>(`/api/admin/calc-settings/inverters/${inverterId}`)
 
 // ---- Area ----
 export const compareArea = (body: {

@@ -8,20 +8,16 @@ Microinversor por padrao, e ordena por proximidade ao alvo.
 
 from __future__ import annotations
 
-import math
+import dataclasses
 from dataclasses import dataclass
-from typing import List, Optional
+from typing import Dict, List, Optional
 
-from app.domain.calculo_solar.commercial_rules import (
-    IMAX_TOLERANCE_A,
-    apply_imax_tolerance,
-    check_min_dc_ac_ratio,
-)
+from app.domain.calculo_solar.calc_adjustments import CalcAdjustments, build_adjusted_inverter, validate_kit_with_adjustments
+from app.domain.calculo_solar.commercial_rules import check_min_dc_ac_ratio, recompute_badge_from_per_mppt
 from app.domain.calculo_solar.mppt_limits import calculate_mppt_limits
 from app.domain.calculo_solar.validate_kit import (
     MpptConfigInput,
     ValidateKitOutput,
-    validate_kit,
 )
 from app.domain.catalogo.inverter import Inverter, InverterPhase
 from app.domain.catalogo.module import Module
@@ -36,20 +32,19 @@ def _candidate_mppt_configs(
     inv: Inverter, mod: Module, t_min: float, t_max: float
 ) -> List[List[Optional[MpptConfigInput]]]:
     """Gera varias configuracoes candidatas de series/strings por MPPT,
-    variando do minimo ate o maximo fisico permitido — NAO apenas o ponto
-    medio de 1 string que `auto_config_strings` usa como sugestao segura
-    para preenchimento manual.
+    variando do minimo ate o maximo permitido por `inv` — NAO apenas o
+    ponto medio de 1 string que `auto_config_strings` usa como sugestao
+    segura para preenchimento manual.
 
-    Sem isso, `suggest_kit` so enxergava um unico tamanho de kit por
-    combinacao modulo+inversor, o que impedia sugestoes de aproveitarem
-    toda a faixa comercial valida da Fotus (70% da potencia nominal ate
-    o overload maximo do inversor).
+    `inv` aqui ja deve vir com os ajustes de calculo aplicados (ver
+    `calc_adjustments.build_adjusted_inverter`) — assim os limites min/
+    max ja refletem tolerancias configuradas, sem precisar de um caso
+    especial aqui.
 
-    Inclui tambem um nivel de strings "tolerante" (`max_tol`), que usa a
-    tolerancia de +2A no Imax (ver commercial_rules.py) para alcancar um
-    numero de strings maior do que `lim.max_strings` permitiria sem a
-    tolerancia — caso contrario essas sugestoes nunca apareceriam, pois
-    `lim.max_strings` ja e o teto sem tolerancia.
+    Sem essa variacao, `suggest_kit` so enxergava um unico tamanho de
+    kit por combinacao modulo+inversor, o que impedia sugestoes de
+    aproveitarem toda a faixa comercial valida da Fotus (70% da
+    potencia nominal ate o overload maximo do inversor).
     """
     limits = []
     for i in range(inv.num_mppt):
@@ -64,7 +59,7 @@ def _candidate_mppt_configs(
     seen = set()
     configs: List[List[Optional[MpptConfigInput]]] = []
     for series_choice in ("min", "mid", "max"):
-        for strings_choice in ("min", "max", "max_tol"):
+        for strings_choice in ("min", "max"):
             cfg: List[Optional[MpptConfigInput]] = []
             key_parts = []
             for lim in limits:
@@ -81,17 +76,7 @@ def _candidate_mppt_configs(
                         lim.max_series,
                         max(lim.min_series, round((lim.min_series + lim.max_series) / 2)),
                     )
-                if strings_choice == "min":
-                    strings = 1
-                elif strings_choice == "max":
-                    strings = lim.max_strings
-                else:
-                    tolerant_imax_strings = (
-                        math.floor((lim.imax_mppt + IMAX_TOLERANCE_A) / lim.imp_max)
-                        if lim.imp_max > 0
-                        else 99
-                    )
-                    strings = min(tolerant_imax_strings, lim.max_strings_by_isc, lim.lin_max)
+                strings = lim.max_strings if strings_choice == "max" else 1
                 if strings < 1 or series < 1:
                     cfg = []
                     break
@@ -121,8 +106,7 @@ class KitSuggestionOutput:
     mppt_config: List[MpptConfigOutputEntry]
     validation: ValidateKitOutput
     score: float
-    imax_tolerance_flags: List[bool]
-    """Paralelo a `validation.per_mppt` — indica em quais MPPTs a tolerancia de +2A no Imax foi usada."""
+    ressalva_reasons: List[str]
 
 
 def _norm_brand(s: str) -> str:
@@ -152,6 +136,7 @@ def suggest_kit(
     inverter_min_kw: Optional[float] = None,
     inverter_max_kw: Optional[float] = None,
     max_suggestions: Optional[int] = None,
+    adjustments_by_inverter_id: Optional[Dict[int, CalcAdjustments]] = None,
 ) -> List[KitSuggestionOutput]:
     has_dc = target_kwp is not None
     has_ac = target_inverter_kw is not None
@@ -167,6 +152,8 @@ def suggest_kit(
         )
 
     limit = _clamp_limit(max_suggestions)
+    adjustments_by_inverter_id = adjustments_by_inverter_id or {}
+    default_adjustments = CalcAdjustments()
 
     module_brand_norm = _norm_brand(module_brand) if module_brand else None
     inverter_brand_norm = _norm_brand(inverter_brand) if inverter_brand else None
@@ -207,7 +194,9 @@ def suggest_kit(
             if inv.p_max_cc is None or inv.v_max is None:
                 continue
 
-            candidates = _candidate_mppt_configs(inv, mod, t_min, t_max)
+            adjustments = adjustments_by_inverter_id.get(inv.inverter_id, default_adjustments)
+            adjusted_inv = build_adjusted_inverter(inv, adjustments)
+            candidates = _candidate_mppt_configs(adjusted_inv, mod, t_min, t_max)
             # Guarda TODOS os tamanhos validos e distintos para este par
             # modulo+inversor (nao so o "melhor") — o objetivo aqui e
             # mostrar a faixa inteira permitida pela Fotus, do minimo de
@@ -216,15 +205,15 @@ def suggest_kit(
 
             for cfg_padded in candidates:
                 try:
-                    validation = validate_kit(inv, mod, t_min, t_max, cfg_padded)
+                    validation, ressalva_reasons = validate_kit_with_adjustments(
+                        inv, mod, t_min, t_max, cfg_padded, adjustments
+                    )
                 except ToolError:
                     continue
 
-                # Tolerancia de +2A no Imax — ver commercial_rules.py. Pode
-                # rebaixar o badge para "Aprovado com ressalva" em vez de
-                # "Verificar"/reprovar, quando a unica pendencia por MPPT e
-                # a corrente do arranjo passar do Imax dentro da margem.
-                validation, _tolerance_flags = apply_imax_tolerance(validation)
+                validation = recompute_badge_from_per_mppt(validation)
+                if ressalva_reasons and validation.overall_badge == "Aprovado":
+                    validation = dataclasses.replace(validation, overall_badge="Aprovado com ressalva")  # type: ignore[arg-type]
 
                 if validation.overall_badge not in ("Aprovado", "Aprovado com ressalva"):
                     continue
@@ -258,7 +247,7 @@ def suggest_kit(
                         mppt_config=mppt_config_output,
                         validation=validation,
                         score=score,
-                        imax_tolerance_flags=_tolerance_flags,
+                        ressalva_reasons=ressalva_reasons,
                     )
                 )
 

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
-import { autoConfigStrings, getMpptLimits } from '../../api/endpoints'
+import { autoConfigStrings, getEffectiveAdjustments, getMpptLimits } from '../../api/endpoints'
 import { extractErrorMessage } from '../../api/client'
-import type { Inverter, Module, MpptConfigEntry, MpptLimits } from '../../types/api'
+import type { CalcAdjustmentsOut, Inverter, Module, MpptConfigEntry, MpptLimits } from '../../types/api'
 import { Spinner } from '../../components/Spinner'
 import { ErrorAlert } from '../../components/ErrorAlert'
 import './StepStrings.css'
@@ -25,26 +25,29 @@ function fmt2(n: number): string {
   return n.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 }
 
-// Regra comercial Fotus: tolerância de +2A no Imax do inversor (ver
-// backend/app/domain/calculo_solar/commercial_rules.py — mesmo valor).
-const IMAX_TOLERANCE_A = 2
-
 /**
  * Explica em linguagem simples (para o time comercial, sem jargão de
  * engenharia) por que uma configuração de série/strings está fora do
  * permitido para o MPPT — sempre mostrando o valor real calculado do
  * arranjo ao lado do limite do inversor.
+ *
+ * `lim` já vem calculado pelo backend em cima do inversor AJUSTADO (com
+ * os ajustes de I max/Isc/V max/V MPP configurados em Configurações de
+ * Cálculo já somados) — por isso os limites mostrados aqui já são os
+ * efetivos, não os cadastrados "crus".
  */
 function explainStringsIssue(
   entry: { series: number; strings: number },
   lim: MpptLimits,
   inverter: Inverter,
+  adjustments: CalcAdjustmentsOut | null,
 ): string[] {
   const reasons: string[] = []
+  const vMax = inverter.v_max != null ? inverter.v_max + (adjustments?.vmax_delta_v ?? 0) : null
+  const vMppMin = inverter.v_mpp_min != null ? inverter.v_mpp_min + (adjustments?.vmpp_min_delta_v ?? 0) : null
 
   if (entry.series > 0 && entry.series < lim.min_series) {
     const vmpArranjo = entry.series * lim.vmp_min
-    const vMppMin = inverter.v_mpp_min
     reasons.push(
       `Poucos módulos em série (${entry.series} de no mínimo ${lim.min_series}). ` +
         `Tensão do arranjo (Vmp): ${fmt1(vmpArranjo)} V` +
@@ -54,7 +57,6 @@ function explainStringsIssue(
   }
   if (entry.series > lim.max_series) {
     const vocArranjo = entry.series * lim.voc_max
-    const vMax = inverter.v_max
     reasons.push(
       `Módulos demais em série (${entry.series} acima do máximo de ${lim.max_series}). ` +
         `Tensão do arranjo (Voc): ${fmt1(vocArranjo)} V` +
@@ -66,9 +68,10 @@ function explainStringsIssue(
     const impArranjo = entry.strings * lim.imp_max
     const iscOk = entry.strings <= lim.max_strings_by_isc
     const linOk = entry.strings <= lim.lin_max
-    const overByImax = impArranjo > lim.imax_mppt
-    const imaxToleranceLimit = lim.imax_mppt + IMAX_TOLERANCE_A
-    const withinImaxTolerance = impArranjo <= imaxToleranceLimit
+    const toleranceNote =
+      adjustments && adjustments.imax_tolerance_a > 0
+        ? ` (já considerando a tolerância de +${fmt1(adjustments.imax_tolerance_a)} A configurada)`
+        : ''
 
     if (!linOk) {
       reasons.push(
@@ -80,20 +83,13 @@ function explainStringsIssue(
       reasons.push(
         `Fileiras (strings) demais nesse MPPT (${entry.strings} acima do máximo de ${lim.max_strings}). ` +
           `Corrente do arranjo (Isc): ${fmt1(iscArranjo)} A — acima do máximo de ${fmt1(lim.isc_mppt)} A ` +
-          'suportado por essa entrada do inversor.',
-      )
-    } else if (overByImax && withinImaxTolerance) {
-      reasons.push(
-        `Fileiras (strings) demais nesse MPPT pelo limite padrão (${entry.strings} acima do máximo de ${lim.max_strings}). ` +
-          `Corrente do arranjo (Imp): ${fmt1(impArranjo)} A — acima do máximo de ${fmt1(lim.imax_mppt)} A, ` +
-          `mas dentro da margem de tolerância de +${IMAX_TOLERANCE_A}A que a Fotus permite ` +
-          `(até ${fmt1(imaxToleranceLimit)} A). O kit poderá ser aprovado com ressalva na tela de resultado.`,
+          `suportado por essa entrada do inversor${toleranceNote}.`,
       )
     } else {
       reasons.push(
         `Fileiras (strings) demais nesse MPPT (${entry.strings} acima do máximo de ${lim.max_strings}). ` +
           `Corrente do arranjo (Imp): ${fmt1(impArranjo)} A — acima do máximo de ${fmt1(lim.imax_mppt)} A ` +
-          `suportado por essa entrada do inversor (mesmo com a tolerância de +${IMAX_TOLERANCE_A}A da Fotus).`,
+          `suportado por essa entrada do inversor${toleranceNote}.`,
       )
     }
   }
@@ -112,6 +108,7 @@ export function StepStrings({
   onNext,
 }: StepStringsProps) {
   const [limits, setLimits] = useState<(MpptLimits | null)[]>([])
+  const [adjustments, setAdjustments] = useState<CalcAdjustmentsOut | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   // MPPTs marcados como "não utilizado" pelo usuário (ex.: inversor com 2
@@ -136,7 +133,7 @@ export function StepStrings({
             mppt_idx: idx,
           }),
         )
-        const [autoConfig, limitsResult] = await Promise.all([
+        const [autoConfig, limitsResult, adjustmentsResult] = await Promise.all([
           mpptConfig.length === inverter.num_mppt && mpptConfig.every((c) => c)
             ? Promise.resolve(null)
             : autoConfigStrings({
@@ -146,10 +143,12 @@ export function StepStrings({
                 t_max: tMax,
               }),
           Promise.all(limitPromises),
+          getEffectiveAdjustments(inverter.inverter_id),
         ])
 
         if (cancelled) return
         setLimits(limitsResult)
+        setAdjustments(adjustmentsResult)
         setUnused(Array.from({ length: inverter.num_mppt }, () => false))
 
         if (autoConfig) {
@@ -320,7 +319,7 @@ export function StepStrings({
                       <div>
                         <strong>Fora dos limites recomendados:</strong>
                         <ul className="strings-card__warning-list">
-                          {explainStringsIssue(entry, lim, inverter).map((reason, i) => (
+                          {explainStringsIssue(entry, lim, inverter, adjustments).map((reason, i) => (
                             <li key={i}>{reason}</li>
                           ))}
                         </ul>

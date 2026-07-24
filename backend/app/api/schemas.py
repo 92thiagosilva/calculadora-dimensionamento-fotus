@@ -1,8 +1,9 @@
 from __future__ import annotations
 
+from datetime import datetime
 from typing import List, Literal, Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class ModuleOut(BaseModel):
@@ -159,3 +160,56 @@ class MeOut(BaseModel):
     email: str
     name: str
     role: Literal["comercial", "restrito"]
+
+
+# ---- Ajustes de calculo (global + por inversor) ----
+
+
+class CalcSettingsIn(BaseModel):
+    """Corpo de PUT tanto para o global quanto para override por
+    inversor. Campos omitidos = nao alterar; campos enviados como
+    null = limpar (voltar a herdar do global, no caso do override)."""
+
+    overload_pct_override: Optional[float] = Field(default=None, ge=0, le=100)
+    imax_tolerance_a: Optional[float] = Field(default=None, ge=0, le=10)
+    isc_tolerance_a: Optional[float] = Field(default=None, ge=0, le=10)
+    vmax_delta_v: Optional[float] = Field(default=None, ge=-500, le=500)
+    vmpp_min_delta_v: Optional[float] = Field(default=None, ge=-500, le=500)
+    vmpp_max_delta_v: Optional[float] = Field(default=None, ge=-500, le=500)
+
+
+class CalcSettingsGlobalOut(BaseModel):
+    overload_pct_override: Optional[float]
+    imax_tolerance_a: float
+    isc_tolerance_a: float
+    vmax_delta_v: float
+    vmpp_min_delta_v: float
+    vmpp_max_delta_v: float
+    updated_at: Optional[datetime] = None
+    updated_by: Optional[str] = None
+
+
+class InverterOverrideOut(BaseModel):
+    inverter_id: int
+    overload_pct_override: Optional[float]
+    imax_tolerance_a: Optional[float]
+    isc_tolerance_a: Optional[float]
+    vmax_delta_v: Optional[float]
+    vmpp_min_delta_v: Optional[float]
+    vmpp_max_delta_v: Optional[float]
+    updated_at: Optional[datetime] = None
+    updated_by: Optional[str] = None
+
+
+class InverterCalcSettingsRow(BaseModel):
+    inverter_id: int
+    brand: str
+    model: str
+    p_nom: float
+    p_max_cc: Optional[float]
+    v_max: Optional[float]
+    v_mpp_min: Optional[float]
+    v_mpp_max: Optional[float]
+    num_mppt: int
+    mppt_currents: List[MpptCurrentsIO]
+    override: Optional[InverterOverrideOut]

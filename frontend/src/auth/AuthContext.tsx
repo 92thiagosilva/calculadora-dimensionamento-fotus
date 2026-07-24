@@ -16,6 +16,14 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined)
 
+/**
+ * Identidade padrao usada quando ninguem se identificou ainda — deixa
+ * todo mundo entrar direto na calculadora como "comercial", sem tela
+ * de login bloqueando o fluxo. Quem precisa de acesso restrito troca
+ * de usuario pelo cabecalho (ver Layout.tsx).
+ */
+const DEFAULT_EMAIL = 'comercial@fotus.com.br'
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<MeOut | null>(null)
   const [loading, setLoading] = useState(true)
@@ -40,13 +48,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const stored = localStorage.getItem(DEV_EMAIL_STORAGE_KEY)
-    if (stored) {
-      fetchMe(stored).catch(() => {
-        // erro ja armazenado em `error`; permanece na tela de login
-      })
-    } else {
-      setLoading(false)
-    }
+    fetchMe(stored ?? DEFAULT_EMAIL).catch(() => {
+      // erro ja armazenado em `error`; a UI mostra o alerta mas nao bloqueia a navegacao
+    })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 

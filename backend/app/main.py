@@ -6,7 +6,15 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
-from app.api import routes_area, routes_auth, routes_bd, routes_catalog, routes_dimensionamento, routes_mismatch
+from app.api import (
+    routes_area,
+    routes_auth,
+    routes_bd,
+    routes_calc_settings,
+    routes_catalog,
+    routes_dimensionamento,
+    routes_mismatch,
+)
 from app.infra.db import Base, engine
 
 app = FastAPI(title="Fotus — Calculadora de Dimensionamento", version="0.1.0")
@@ -31,6 +39,7 @@ app.include_router(routes_dimensionamento.router)
 app.include_router(routes_area.router)
 app.include_router(routes_mismatch.router)
 app.include_router(routes_bd.router)
+app.include_router(routes_calc_settings.router)
 
 
 @app.get("/api/health")

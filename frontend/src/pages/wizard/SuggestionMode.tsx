@@ -242,6 +242,16 @@ export function SuggestionMode({ tMin, tMax, onUseKit }: SuggestionModeProps) {
                     <span>{s.validation.total_mods} módulos</span>
                     <span>ratio CC/CA {s.validation.ratio_cc_ca.toFixed(0)}%</span>
                   </div>
+                  {s.validation.ressalva_reasons && s.validation.ressalva_reasons.length > 0 && (
+                    <div className="alert alert--warning suggestion-card__ressalva">
+                      <strong>Aprovado com ressalva:</strong>
+                      <ul className="suggestion-card__ressalva-list">
+                        {s.validation.ressalva_reasons.map((reason, i) => (
+                          <li key={i}>{reason}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
                   <button
                     type="button"
                     className="btn btn--secondary btn--sm"

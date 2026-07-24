@@ -14,7 +14,7 @@ function fmt(n: number, digits = 2): string {
 
 export function ResultPanel({ result, module, inverter }: ResultPanelProps) {
   const tone = toneFromStatus(result.overall_badge)
-  const imaxToleranceUsed = result.per_mppt.some((p) => p.imax_tolerance_applied)
+  const ressalvaReasons = result.ressalva_reasons ?? []
 
   return (
     <div className="result-panel">
@@ -57,12 +57,14 @@ export function ResultPanel({ result, module, inverter }: ResultPanelProps) {
         </div>
       )}
 
-      {imaxToleranceUsed && (
+      {ressalvaReasons.length > 0 && (
         <div className="alert alert--warning result-note">
           <strong>Aprovado com ressalva: </strong>
-          A corrente do arranjo (Imp) ultrapassa o limite nominal (I max) do inversor em pelo menos
-          um MPPT, mas dentro da margem de tolerância de +2A que a Fotus permite. Revise antes de
-          fechar o kit.
+          <ul className="result-note__reasons">
+            {ressalvaReasons.map((reason, idx) => (
+              <li key={idx}>{reason}</li>
+            ))}
+          </ul>
         </div>
       )}
 
@@ -111,12 +113,7 @@ export function ResultPanel({ result, module, inverter }: ResultPanelProps) {
                   </tr>
                   <tr>
                     <td>Imp arranjo</td>
-                    <td>
-                      {fmt(mppt.imp_arranjo)} A
-                      {mppt.imax_tolerance_applied && (
-                        <span className="mppt-card__tolerance-tag"> (dentro da tolerância +2A)</span>
-                      )}
-                    </td>
+                    <td>{fmt(mppt.imp_arranjo)} A</td>
                   </tr>
                   <tr>
                     <td>Fator limitante</td>

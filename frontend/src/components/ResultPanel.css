@@ -71,6 +71,15 @@
   font-size: 0.95rem;
 }
 
+.result-note__reasons {
+  margin: 0.4em 0 0;
+  padding-left: 1.25em;
+}
+
+.result-note__reasons li {
+  margin-bottom: 0.2em;
+}
+
 .result-panel__section-title {
   margin-bottom: 0.25rem;
 }
@@ -144,12 +153,4 @@
 .status-dot--warn {
   background: var(--color-warning-bg);
   color: var(--color-warning);
-}
-
-.mppt-card__tolerance-tag {
-  display: block;
-  font-size: 0.72rem;
-  font-weight: 600;
-  color: var(--color-warning);
-  text-align: right;
 }

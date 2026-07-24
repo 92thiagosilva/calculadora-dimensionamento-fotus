@@ -112,8 +112,6 @@ export interface PerMpptResult {
   voc_arranjo: number
   vmp_arranjo: number
   imp_arranjo: number
-  /** Tolerância comercial Fotus de +2A no Imax foi usada para aprovar este MPPT. */
-  imax_tolerance_applied?: boolean
 }
 
 export type OverallBadge = 'Aprovado' | 'Reprovado' | 'Verificar' | 'Aprovado com ressalva'
@@ -133,6 +131,63 @@ export interface ValidateKitResponse {
   dc_ac_ratio_ok?: boolean
   dc_ac_min_kwp_required?: number
   dc_ac_ratio_note?: string | null
+  /** Explicações de quais ajustes configurados (Imax/Isc/V max/V MPP min/max/sobrecarga) foram decisivos para a aprovação. */
+  ressalva_reasons?: string[]
+}
+
+export interface CalcAdjustmentsOut {
+  overload_pct_override: number | null
+  imax_tolerance_a: number
+  isc_tolerance_a: number
+  vmax_delta_v: number
+  vmpp_min_delta_v: number
+  vmpp_max_delta_v: number
+}
+
+export interface CalcSettingsIn {
+  overload_pct_override?: number | null
+  imax_tolerance_a?: number | null
+  isc_tolerance_a?: number | null
+  vmax_delta_v?: number | null
+  vmpp_min_delta_v?: number | null
+  vmpp_max_delta_v?: number | null
+}
+
+export interface CalcSettingsGlobalOut {
+  overload_pct_override: number | null
+  imax_tolerance_a: number
+  isc_tolerance_a: number
+  vmax_delta_v: number
+  vmpp_min_delta_v: number
+  vmpp_max_delta_v: number
+  updated_at: string | null
+  updated_by: string | null
+}
+
+export interface InverterOverrideOut {
+  inverter_id: number
+  overload_pct_override: number | null
+  imax_tolerance_a: number | null
+  isc_tolerance_a: number | null
+  vmax_delta_v: number | null
+  vmpp_min_delta_v: number | null
+  vmpp_max_delta_v: number | null
+  updated_at: string | null
+  updated_by: string | null
+}
+
+export interface InverterCalcSettingsRow {
+  inverter_id: number
+  brand: string
+  model: string
+  p_nom: number
+  p_max_cc: number | null
+  v_max: number | null
+  v_mpp_min: number | null
+  v_mpp_max: number | null
+  num_mppt: number
+  mppt_currents: MpptCurrents[]
+  override: InverterOverrideOut | null
 }
 
 export interface SuggestKitEntryMpptConfig {
