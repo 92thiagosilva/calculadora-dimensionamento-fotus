@@ -142,6 +142,7 @@ export interface CalcAdjustmentsOut {
   vmax_delta_v: number
   vmpp_min_delta_v: number
   vmpp_max_delta_v: number
+  dc_ac_ratio_min_pct_override: number | null
 }
 
 export interface CalcSettingsIn {
@@ -151,6 +152,7 @@ export interface CalcSettingsIn {
   vmax_delta_v?: number | null
   vmpp_min_delta_v?: number | null
   vmpp_max_delta_v?: number | null
+  dc_ac_ratio_min_pct_override?: number | null
 }
 
 export interface CalcSettingsGlobalOut {
@@ -160,6 +162,7 @@ export interface CalcSettingsGlobalOut {
   vmax_delta_v: number
   vmpp_min_delta_v: number
   vmpp_max_delta_v: number
+  dc_ac_ratio_min_pct_override: number | null
   updated_at: string | null
   updated_by: string | null
 }
@@ -172,6 +175,7 @@ export interface InverterOverrideOut {
   vmax_delta_v: number | null
   vmpp_min_delta_v: number | null
   vmpp_max_delta_v: number | null
+  dc_ac_ratio_min_pct_override: number | null
   updated_at: string | null
   updated_by: string | null
 }

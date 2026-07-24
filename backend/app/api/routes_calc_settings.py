@@ -34,6 +34,7 @@ def get_global(db: Session = Depends(get_session), _user: CurrentUser = Depends(
         vmax_delta_v=row.vmax_delta_v,
         vmpp_min_delta_v=row.vmpp_min_delta_v,
         vmpp_max_delta_v=row.vmpp_max_delta_v,
+        dc_ac_ratio_min_pct_override=row.dc_ac_ratio_min_pct_override,
         updated_at=row.updated_at,
         updated_by=row.updated_by,
     )
@@ -46,7 +47,8 @@ def put_global(
     user: CurrentUser = Depends(require_restricted),
 ):
     data = body.model_dump(exclude_unset=True)
-    # Campos globais nao podem ficar "vazios" (None) exceto overload_pct_override.
+    # Campos globais nao podem ficar "vazios" (None) exceto overload_pct_override
+    # e dc_ac_ratio_min_pct_override (None = usa o padrao de 70%).
     for field in ("imax_tolerance_a", "isc_tolerance_a", "vmax_delta_v", "vmpp_min_delta_v", "vmpp_max_delta_v"):
         if data.get(field) is None and field in data:
             raise HTTPException(422, f"{field} nao pode ser nulo no ajuste global.")
@@ -58,6 +60,7 @@ def put_global(
         vmax_delta_v=row.vmax_delta_v,
         vmpp_min_delta_v=row.vmpp_min_delta_v,
         vmpp_max_delta_v=row.vmpp_max_delta_v,
+        dc_ac_ratio_min_pct_override=row.dc_ac_ratio_min_pct_override,
         updated_at=row.updated_at,
         updated_by=row.updated_by,
     )
@@ -74,6 +77,7 @@ def _override_out(row) -> Optional[InverterOverrideOut]:
         vmax_delta_v=row.vmax_delta_v,
         vmpp_min_delta_v=row.vmpp_min_delta_v,
         vmpp_max_delta_v=row.vmpp_max_delta_v,
+        dc_ac_ratio_min_pct_override=row.dc_ac_ratio_min_pct_override,
         updated_at=row.updated_at,
         updated_by=row.updated_by,
     )

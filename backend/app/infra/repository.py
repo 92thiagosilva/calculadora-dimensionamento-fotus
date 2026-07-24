@@ -97,6 +97,7 @@ _CALC_ADJUSTMENT_FIELDS = (
     "vmax_delta_v",
     "vmpp_min_delta_v",
     "vmpp_max_delta_v",
+    "dc_ac_ratio_min_pct_override",
 )
 
 
@@ -180,6 +181,7 @@ def _merge_adjustments(global_row: CalcSettingsGlobal, override_row) -> CalcAdju
         vmax_delta_v=pick("vmax_delta_v"),
         vmpp_min_delta_v=pick("vmpp_min_delta_v"),
         vmpp_max_delta_v=pick("vmpp_max_delta_v"),
+        dc_ac_ratio_min_pct_override=pick("dc_ac_ratio_min_pct_override"),
     )
 
 

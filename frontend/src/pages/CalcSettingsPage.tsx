@@ -66,6 +66,7 @@ function GlobalSettingsCard() {
         vmax_delta_v: settings.vmax_delta_v,
         vmpp_min_delta_v: settings.vmpp_min_delta_v,
         vmpp_max_delta_v: settings.vmpp_max_delta_v,
+        dc_ac_ratio_min_pct_override: settings.dc_ac_ratio_min_pct_override,
       }
       const updated = await putCalcSettingsGlobal(body)
       setSettings(updated)
@@ -96,6 +97,17 @@ function GlobalSettingsCard() {
           max={100}
           step={1}
           defaultLabel="Usar sobrecarga cadastrada de cada inversor"
+        />
+        <AdjustmentField
+          label="Potência mínima de entrada (CC/CA)"
+          hint="Mínimo de potência DC dos módulos em relação à potência nominal CA do inversor."
+          unit="%"
+          value={settings.dc_ac_ratio_min_pct_override}
+          onChange={(v) => setSettings({ ...settings, dc_ac_ratio_min_pct_override: v })}
+          min={0}
+          max={100}
+          step={1}
+          defaultLabel="Usar padrão de 70%"
         />
         <AdjustmentField
           label="Tolerância de I max"
@@ -287,6 +299,7 @@ function InverterOverrideForm({
     vmax_delta_v: row.override?.vmax_delta_v ?? null,
     vmpp_min_delta_v: row.override?.vmpp_min_delta_v ?? null,
     vmpp_max_delta_v: row.override?.vmpp_max_delta_v ?? null,
+    dc_ac_ratio_min_pct_override: row.override?.dc_ac_ratio_min_pct_override ?? null,
   })
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -334,6 +347,16 @@ function InverterOverrideForm({
           unit="%"
           value={values.overload_pct_override ?? null}
           onChange={(v) => setValues({ ...values, overload_pct_override: v })}
+          min={0}
+          max={100}
+          step={1}
+          defaultLabel="Usar padrão global"
+        />
+        <AdjustmentField
+          label="Potência mínima de entrada (CC/CA)"
+          unit="%"
+          value={values.dc_ac_ratio_min_pct_override ?? null}
+          onChange={(v) => setValues({ ...values, dc_ac_ratio_min_pct_override: v })}
           min={0}
           max={100}
           step={1}

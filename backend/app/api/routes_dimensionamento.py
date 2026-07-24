@@ -14,8 +14,13 @@ from app.api.schemas import (
     ValidateKitRequest,
 )
 from app.domain.calculo_solar.auto_config import auto_config_strings
-from app.domain.calculo_solar.calc_adjustments import build_adjusted_inverter, validate_kit_with_adjustments
-from app.domain.calculo_solar.commercial_rules import check_min_dc_ac_ratio, recompute_badge_from_per_mppt
+from app.domain.calculo_solar.calc_adjustments import (
+    CalcAdjustments,
+    build_adjusted_inverter,
+    check_dc_ac_ratio_with_adjustments,
+    validate_kit_with_adjustments,
+)
+from app.domain.calculo_solar.commercial_rules import recompute_badge_from_per_mppt
 from app.domain.calculo_solar.corrections import apply_module_corrections
 from app.domain.calculo_solar.mppt_limits import calculate_mppt_limits
 from app.domain.calculo_solar.suggestion import suggest_kit
@@ -26,26 +31,35 @@ from app.infra.db import get_session
 router = APIRouter(prefix="/api/dimensionamento", tags=["dimensionamento"])
 
 
-def _apply_dc_ac_ratio_rule(out: dict, inv) -> None:
-    """Aplica a regra comercial Fotus (modulos >= 70% da potencia nominal
-    do inversor) por cima do resultado do motor canonico, sem alterar a
-    logica bit-exata de `validate_kit`. Sobrescreve `overall_badge` para
+def _apply_dc_ac_ratio_rule(out: dict, inv, adjustments: CalcAdjustments) -> None:
+    """Aplica a regra comercial Fotus (modulos >= X% da potencia nominal
+    do inversor, X=70 por padrao mas configuravel — ver calc_adjustments)
+    por cima do resultado do motor canonico, sem alterar a logica
+    bit-exata de `validate_kit`. Sobrescreve `overall_badge` para
     'Reprovado' quando a regra falha (mesmo que o motor canonico tivesse
     aprovado), preservando o badge original em `formula_badge` para
-    referencia/depuracao."""
-    check = check_min_dc_ac_ratio(out["total_kwp"], inv.p_nom)
+    referencia/depuracao. Quando um percentual configurado (menor que o
+    padrao) e o motivo da aprovacao, adiciona um motivo de ressalva em
+    vez de aprovar silenciosamente."""
+    check, effective_pct, ressalva_reason = check_dc_ac_ratio_with_adjustments(
+        out["total_kwp"], inv.p_nom, adjustments
+    )
     out["formula_badge"] = out["overall_badge"]
     out["dc_ac_ratio_ok"] = check.ok
     out["dc_ac_min_kwp_required"] = check.min_kwp_required
     if not check.ok:
         out["overall_badge"] = "Reprovado"
         out["dc_ac_ratio_note"] = (
-            f"Abaixo de 70% da potência nominal do inversor: {out['total_kwp']:.2f} kWp de módulos "
-            f"< {check.min_kwp_required:.2f} kWp mínimos exigidos (70% de {inv.p_nom / 1000:.1f} kW). "
-            "Adicione mais módulos ou escolha um inversor menor."
+            f"Abaixo de {effective_pct:.0f}% da potência nominal do inversor: {out['total_kwp']:.2f} kWp de "
+            f"módulos < {check.min_kwp_required:.2f} kWp mínimos exigidos ({effective_pct:.0f}% de "
+            f"{inv.p_nom / 1000:.1f} kW). Adicione mais módulos ou escolha um inversor menor."
         )
     else:
         out["dc_ac_ratio_note"] = None
+        if ressalva_reason:
+            out.setdefault("ressalva_reasons", []).append(ressalva_reason)
+            if out["overall_badge"] == "Aprovado":
+                out["overall_badge"] = "Aprovado com ressalva"
 
 
 def _get_module(db: Session, module_id: int):
@@ -144,7 +158,7 @@ def validate_kit_endpoint(
     if ressalva_reasons and out["overall_badge"] == "Aprovado":
         out["overall_badge"] = "Aprovado com ressalva"
     out["ressalva_reasons"] = ressalva_reasons
-    _apply_dc_ac_ratio_rule(out, inv)
+    _apply_dc_ac_ratio_rule(out, inv, adjustments)
     return out
 
 

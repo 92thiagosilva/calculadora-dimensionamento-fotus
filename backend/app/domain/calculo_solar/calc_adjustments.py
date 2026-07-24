@@ -16,6 +16,9 @@ cadastrado no catalogo (sem ajuste algum):
 - `vmax_delta_v` / `vmpp_min_delta_v` / `vmpp_max_delta_v`: somados
   (podem ser negativos) ao V max / V MPP min / V MPP max cadastrados
   (-500 a +500V).
+- `dc_ac_ratio_min_pct_override`: substitui o minimo comercial fixo de
+  70% (potencia DC dos modulos / potencia nominal CA do inversor) por
+  um valor absoluto (0-100%). Default = usa 70%.
 
 Sempre que um ajuste (diferente do default) for o motivo de uma
 aprovacao que NAO teria acontecido com os valores cadastrados, o kit
@@ -30,6 +33,7 @@ from dataclasses import dataclass
 from typing import List, Optional, Tuple
 
 from app.domain.catalogo.inverter import Inverter, MpptCurrents
+from app.domain.calculo_solar.commercial_rules import DC_AC_RATIO_MIN_PCT_DEFAULT, DcAcRatioCheck, check_min_dc_ac_ratio
 from app.domain.calculo_solar.validate_kit import (
     InverterForValidate,
     MpptConfigInput,
@@ -49,6 +53,7 @@ class CalcAdjustments:
     vmax_delta_v: float = 0.0
     vmpp_min_delta_v: float = 0.0
     vmpp_max_delta_v: float = 0.0
+    dc_ac_ratio_min_pct_override: Optional[float] = None
 
     def is_default(self) -> bool:
         return (
@@ -58,6 +63,7 @@ class CalcAdjustments:
             and self.vmax_delta_v == 0
             and self.vmpp_min_delta_v == 0
             and self.vmpp_max_delta_v == 0
+            and self.dc_ac_ratio_min_pct_override is None
         )
 
 
@@ -167,3 +173,32 @@ def validate_kit_with_adjustments(
                 )
 
     return adjusted_result, reasons
+
+
+def check_dc_ac_ratio_with_adjustments(
+    total_kwp: float, p_nom_w: float, adjustments: CalcAdjustments
+) -> Tuple[DcAcRatioCheck, float, Optional[str]]:
+    """Igual a `commercial_rules.check_min_dc_ac_ratio`, mas usando o
+    percentual minimo efetivo (ajuste configurado ou o padrao de 70%).
+    Retorna tambem o percentual efetivo usado e, quando o ajuste
+    configurado e o motivo de uma aprovacao que NAO aconteceria com o
+    padrao de 70%, um motivo de ressalva pronto para exibir."""
+    effective_pct = (
+        adjustments.dc_ac_ratio_min_pct_override
+        if adjustments.dc_ac_ratio_min_pct_override is not None
+        else DC_AC_RATIO_MIN_PCT_DEFAULT
+    )
+    check = check_min_dc_ac_ratio(total_kwp, p_nom_w, effective_pct / 100)
+
+    reason: Optional[str] = None
+    if adjustments.dc_ac_ratio_min_pct_override is not None and effective_pct != DC_AC_RATIO_MIN_PCT_DEFAULT:
+        default_check = check_min_dc_ac_ratio(total_kwp, p_nom_w, DC_AC_RATIO_MIN_PCT_DEFAULT / 100)
+        if check.ok and not default_check.ok:
+            reason = (
+                f"Mínimo de potência CC/CA ajustado: com o padrão de {_fmt(DC_AC_RATIO_MIN_PCT_DEFAULT)}% "
+                f"seriam exigidos no mínimo {_fmt(default_check.min_kwp_required)} kWp de módulos (o kit "
+                f"ficaria abaixo); com o ajuste configurado ({_fmt(effective_pct)}%), o mínimo passa a ser "
+                f"{_fmt(check.min_kwp_required)} kWp."
+            )
+
+    return check, effective_pct, reason

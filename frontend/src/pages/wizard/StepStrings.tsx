@@ -191,6 +191,7 @@ export function StepStrings({
 
   const ratioPercent = inverter.p_nom > 0 ? (totalKwp / (inverter.p_nom / 1000)) * 100 : 0
   const overloadPercent = inverter.p_max_cc != null ? (inverter.p_max_cc / inverter.p_nom - 1) * 100 : null
+  const minRatioPercent = adjustments?.dc_ac_ratio_min_pct_override ?? 70
 
   if (loading) return <Spinner label="Calculando limites de MPPT…" />
   if (error) return <ErrorAlert message={error} />
@@ -238,9 +239,10 @@ export function StepStrings({
         <div className="kit-summary__item kit-summary__item--highlight">
           <span className="kit-summary__label">Potência do arranjo (até agora)</span>
           <span className="kit-summary__value kit-summary__value--big">{fmt2(totalKwp)} kWp</span>
-          <span className={`kit-summary__sub ${ratioPercent < 70 ? 'kit-summary__sub--warn' : ''}`}>
+          <span className={`kit-summary__sub ${ratioPercent < minRatioPercent ? 'kit-summary__sub--warn' : ''}`}>
             {fmt1(ratioPercent)}% da potência nominal do inversor
-            {ratioPercent < 70 && ' — abaixo do mínimo de 70% exigido pela Fotus'}
+            {ratioPercent < minRatioPercent &&
+              ` — abaixo do mínimo de ${fmt1(minRatioPercent)}% exigido pela Fotus`}
           </span>
         </div>
       </div>

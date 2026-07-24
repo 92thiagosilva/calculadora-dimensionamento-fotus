@@ -98,6 +98,10 @@ class CalcSettingsGlobal(Base):
     - `vmax_delta_v` / `vmpp_min_delta_v` / `vmpp_max_delta_v`: somados
       (podem ser negativos) ao V max / V MPP min / V MPP max cadastrados
       (-500 a +500V).
+    - `dc_ac_ratio_min_pct_override`: substitui o minimo comercial de
+      potencia DC dos modulos em relacao a potencia nominal CA do
+      inversor (padrao fixo de 70%) por um valor absoluto (0-100%). None
+      = usa o padrao de 70%.
     """
 
     __tablename__ = "calc_settings_global"
@@ -109,6 +113,7 @@ class CalcSettingsGlobal(Base):
     vmax_delta_v: Mapped[float] = mapped_column(Float, default=0.0)
     vmpp_min_delta_v: Mapped[float] = mapped_column(Float, default=0.0)
     vmpp_max_delta_v: Mapped[float] = mapped_column(Float, default=0.0)
+    dc_ac_ratio_min_pct_override: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
     updated_at: Mapped[dt.datetime] = mapped_column(DateTime, default=dt.datetime.utcnow, onupdate=dt.datetime.utcnow)
     updated_by: Mapped[Optional[str]] = mapped_column(String, nullable=True)
 
@@ -127,5 +132,6 @@ class CalcSettingsInverterOverride(Base):
     vmax_delta_v: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
     vmpp_min_delta_v: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
     vmpp_max_delta_v: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    dc_ac_ratio_min_pct_override: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
     updated_at: Mapped[dt.datetime] = mapped_column(DateTime, default=dt.datetime.utcnow, onupdate=dt.datetime.utcnow)
     updated_by: Mapped[Optional[str]] = mapped_column(String, nullable=True)

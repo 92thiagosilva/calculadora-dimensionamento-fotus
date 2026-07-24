@@ -12,8 +12,13 @@ import dataclasses
 from dataclasses import dataclass
 from typing import Dict, List, Optional
 
-from app.domain.calculo_solar.calc_adjustments import CalcAdjustments, build_adjusted_inverter, validate_kit_with_adjustments
-from app.domain.calculo_solar.commercial_rules import check_min_dc_ac_ratio, recompute_badge_from_per_mppt
+from app.domain.calculo_solar.calc_adjustments import (
+    CalcAdjustments,
+    build_adjusted_inverter,
+    check_dc_ac_ratio_with_adjustments,
+    validate_kit_with_adjustments,
+)
+from app.domain.calculo_solar.commercial_rules import recompute_badge_from_per_mppt
 from app.domain.calculo_solar.mppt_limits import calculate_mppt_limits
 from app.domain.calculo_solar.validate_kit import (
     MpptConfigInput,
@@ -218,11 +223,19 @@ def suggest_kit(
                 if validation.overall_badge not in ("Aprovado", "Aprovado com ressalva"):
                     continue
 
-                # Regra comercial Fotus: modulos (DC) >= 70% da potencia nominal
-                # CA do inversor. Nao faz parte do motor canonico bit-exato —
-                # ver app/domain/calculo_solar/commercial_rules.py.
-                if not check_min_dc_ac_ratio(validation.total_kwp, inv.p_nom).ok:
+                # Regra comercial Fotus: modulos (DC) >= X% (70% por padrao,
+                # configuravel) da potencia nominal CA do inversor. Nao faz
+                # parte do motor canonico bit-exato — ver
+                # app/domain/calculo_solar/commercial_rules.py.
+                ratio_check, _ratio_pct, ratio_reason = check_dc_ac_ratio_with_adjustments(
+                    validation.total_kwp, inv.p_nom, adjustments
+                )
+                if not ratio_check.ok:
                     continue
+                if ratio_reason:
+                    ressalva_reasons = ressalva_reasons + [ratio_reason]
+                    if validation.overall_badge == "Aprovado":
+                        validation = dataclasses.replace(validation, overall_badge="Aprovado com ressalva")  # type: ignore[arg-type]
 
                 kwp_key = round(validation.total_kwp, 2)
                 if kwp_key in seen_kwp:

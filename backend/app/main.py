@@ -15,7 +15,7 @@ from app.api import (
     routes_dimensionamento,
     routes_mismatch,
 )
-from app.infra.db import Base, engine
+from app.infra.db import Base, engine, run_lightweight_migrations
 
 app = FastAPI(title="Fotus — Calculadora de Dimensionamento", version="0.1.0")
 
@@ -31,6 +31,7 @@ app.add_middleware(
 @app.on_event("startup")
 def on_startup() -> None:
     Base.metadata.create_all(engine)
+    run_lightweight_migrations()
 
 
 app.include_router(routes_auth.router)

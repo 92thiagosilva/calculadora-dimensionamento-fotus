@@ -10,11 +10,13 @@ DC dos módulos escolhidos deve ser, no mínimo, 70% da potência nominal
 CA do inversor. Ex.: inversor de 10 kW nominal exige pelo menos 7 kWp
 de módulos. Abaixo disso, o kit é considerado subdimensionado e não
 deve ser aprovado — nem no fluxo manual (validate-kit) nem nas
-sugestões automáticas (suggest-kit).
+sugestões automáticas (suggest-kit). Esse minimo de 70% e o DEFAULT;
+e configuravel (0-100%) via `calc_adjustments.py`
+(`dc_ac_ratio_min_pct_override`, global ou por inversor).
 
 Ver tambem `calc_adjustments.py` — sistema configuravel de tolerancias
-(Imax, Isc, V max, V MPP min/max, sobrecarga) que substituiu a antiga
-regra fixa de "+2A no Imax" que existia aqui.
+(Imax, Isc, V max, V MPP min/max, sobrecarga, minimo CC/CA) que
+substituiu a antiga regra fixa de "+2A no Imax" que existia aqui.
 """
 
 from __future__ import annotations
@@ -24,7 +26,8 @@ from dataclasses import dataclass
 
 from app.domain.calculo_solar.validate_kit import ValidateKitOutput
 
-MIN_DC_AC_RATIO = 0.70
+DC_AC_RATIO_MIN_PCT_DEFAULT = 70.0
+MIN_DC_AC_RATIO = DC_AC_RATIO_MIN_PCT_DEFAULT / 100
 
 
 @dataclass(frozen=True)
@@ -32,13 +35,16 @@ class DcAcRatioCheck:
     ratio: float
     """total_kwp / p_nom_kw — nao arredondado (diferente de ratio_cc_ca, que e um valor de exibicao)."""
     min_kwp_required: float
-    """0.70 * p_nom_kw — quantos kWp de modulos sao necessarios no minimo."""
+    """min_ratio * p_nom_kw — quantos kWp de modulos sao necessarios no minimo."""
     ok: bool
 
 
-def check_min_dc_ac_ratio(total_kwp: float, p_nom_w: float) -> DcAcRatioCheck:
+def check_min_dc_ac_ratio(total_kwp: float, p_nom_w: float, min_ratio: float = MIN_DC_AC_RATIO) -> DcAcRatioCheck:
+    """`min_ratio` e uma fracao (0.70 = 70%), nao um percentual — quem
+    tem o percentual configurado (0-100) deve dividir por 100 antes de
+    chamar (ver `calc_adjustments.check_dc_ac_ratio_with_adjustments`)."""
     p_nom_kw = p_nom_w / 1000
-    min_kwp_required = MIN_DC_AC_RATIO * p_nom_kw
+    min_kwp_required = min_ratio * p_nom_kw
     ratio = (total_kwp / p_nom_kw) if p_nom_kw > 0 else 0.0
     return DcAcRatioCheck(ratio=ratio, min_kwp_required=min_kwp_required, ok=total_kwp >= min_kwp_required)
 

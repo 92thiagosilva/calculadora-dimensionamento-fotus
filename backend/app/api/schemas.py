@@ -176,6 +176,7 @@ class CalcSettingsIn(BaseModel):
     vmax_delta_v: Optional[float] = Field(default=None, ge=-500, le=500)
     vmpp_min_delta_v: Optional[float] = Field(default=None, ge=-500, le=500)
     vmpp_max_delta_v: Optional[float] = Field(default=None, ge=-500, le=500)
+    dc_ac_ratio_min_pct_override: Optional[float] = Field(default=None, ge=0, le=100)
 
 
 class CalcSettingsGlobalOut(BaseModel):
@@ -185,6 +186,7 @@ class CalcSettingsGlobalOut(BaseModel):
     vmax_delta_v: float
     vmpp_min_delta_v: float
     vmpp_max_delta_v: float
+    dc_ac_ratio_min_pct_override: Optional[float]
     updated_at: Optional[datetime] = None
     updated_by: Optional[str] = None
 
@@ -197,6 +199,7 @@ class InverterOverrideOut(BaseModel):
     vmax_delta_v: Optional[float]
     vmpp_min_delta_v: Optional[float]
     vmpp_max_delta_v: Optional[float]
+    dc_ac_ratio_min_pct_override: Optional[float]
     updated_at: Optional[datetime] = None
     updated_by: Optional[str] = None
 
