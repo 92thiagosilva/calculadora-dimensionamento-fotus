@@ -194,7 +194,10 @@ export function SuggestionMode({ tMin, tMax, onUseKit }: SuggestionModeProps) {
         <>
           <div className="suggestion-toolbar">
             <p className="muted suggestion-count">
-              {sortedSuggestions.length} opções encontradas — de 70% até o overload máximo de cada inversor.
+              {sortedSuggestions.length} opções encontradas —{' '}
+              {targetMode === 'kwp'
+                ? 'dentro de ±5% da meta de kWp informada.'
+                : 'com inversor de potência igual à meta informada.'}
             </p>
             <div className="field suggestion-toolbar__sort">
               <label htmlFor="sort-order">Ordenar por</label>

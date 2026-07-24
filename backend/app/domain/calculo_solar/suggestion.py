@@ -32,6 +32,10 @@ DEFAULT_LIMIT = 100
 LIMIT_MIN = 1
 LIMIT_MAX = 500
 
+# Tolerancia de ponto flutuante para "potencia do inversor == meta digitada"
+# (0.01 kW = 10W, bem abaixo de qualquer diferenca real entre modelos).
+INVERTER_KW_EXACT_TOLERANCE = 0.01
+
 
 def _candidate_mppt_configs(
     inv: Inverter, mod: Module, t_min: float, t_max: float
@@ -198,14 +202,11 @@ def suggest_kit(
                 continue
             if inv.p_max_cc is None or inv.v_max is None:
                 continue
-            # A meta e um alvo de dimensionamento, nao so um criterio de
-            # ordenacao — inversores fora de uma janela razoavel [0.5x,
-            # 2x] da meta de kW do inversor nem entram na busca (evita
-            # sugerir, por ex., um inversor de 2,25 kW quando a meta e
-            # 10 kW so porque ele tecnicamente passa na regra dos 70%).
+            # Meta em kW do inversor = escolha exata do modelo de inversor
+            # pela potencia nominal (nao uma janela de proximidade).
             if target_inverter_kw is not None:
                 inv_kw_check = inv.p_nom / 1000
-                if not (target_inverter_kw * 0.5 <= inv_kw_check <= target_inverter_kw * 2.0):
+                if abs(inv_kw_check - target_inverter_kw) > INVERTER_KW_EXACT_TOLERANCE:
                     continue
 
             adjustments = adjustments_by_inverter_id.get(inv.inverter_id, default_adjustments)
@@ -246,11 +247,10 @@ def suggest_kit(
                     if validation.overall_badge == "Aprovado":
                         validation = dataclasses.replace(validation, overall_badge="Aprovado com ressalva")  # type: ignore[arg-type]
 
-                # Mesma janela razoavel [0.5x, 2x], agora para o total_kwp
-                # do candidato quando a meta e em kWp de modulos (o filtro
-                # por kW do inversor ja aconteceu acima, por inversor).
+                # Meta em kWp de modulos = janela estreita de +-5% em
+                # torno do valor digitado (nao a faixa comercial inteira).
                 if target_kwp is not None:
-                    if not (target_kwp * 0.5 <= validation.total_kwp <= target_kwp * 2.0):
+                    if not (target_kwp * 0.95 <= validation.total_kwp <= target_kwp * 1.05):
                         continue
 
                 kwp_key = round(validation.total_kwp, 2)
