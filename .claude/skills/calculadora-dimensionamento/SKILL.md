@@ -35,6 +35,7 @@ frontend/src/
   components/ConditionalRulesEditor, RuleTester, AdjustmentField, ResultPanel, ...
   api/client.ts, api/endpoints.ts, types/api.ts
 scripts/start-production.ps1   sobe o servidor de produção
+artifact/                      cópia compartilhável (Artefato do Claude): motor em JavaScript + interface; ver artifact/README.md
 ```
 
 ## Motor canônico — NÃO alterar
@@ -116,9 +117,14 @@ Autenticação: header `X-Dev-User-Email` (modo dev; `AUTH_MODE=production` só 
 
 - **Sobrecarga global em 0 %**: no `AdjustmentField`, marcar "Definir valor customizado" preenche **0**; salvar assim substitui a sobrecarga de todos os inversores por 0 % (kit acima da potência nominal reprova). Agora a tela avisa (campo Sobrecarga, resultado, passo de strings e testador), mas confira os ajustes globais ao investigar reprovações por overload.
 - `Base.metadata.create_all` não adiciona colunas a tabelas existentes: toda coluna nova precisa entrar em `run_lightweight_migrations` (`infra/db.py`).
+- **Tela de Configurações com dados velhos**: a página lê os ajustes uma vez; salvar o padrão global regrava **todos** os campos com o que estava carregado, desfazendo qualquer mudança feita por fora (banco/API) depois que a tela foi aberta. Recarregue a página antes de editar.
 - `frontend/src/api/client.ts` fixa `API_BASE_URL = 'http://127.0.0.1:8010'`. Pelo código, um navegador em outra máquina da rede chamaria o próprio localhost para a API; confirme o acesso pela rede antes de assumir que funciona.
 - URL direta de rota do frontend (ex.: `/calc-settings`) dá 404 no servidor de produção (sem fallback de SPA); entre pela raiz e navegue pelo menu.
 - PowerShell 5.1: `git commit -m` com texto de várias linhas quebra; grave a mensagem num arquivo e use `git commit -F <arquivo>`. O `git push` imprime o progresso no stderr, e o PowerShell o mostra como erro (`NativeCommandError`) mesmo com sucesso — confira a linha `a..b main -> main`.
+
+## Artefato compartilhável (`artifact/`)
+
+Página HTML única com o motor portado para JavaScript (`artifact/src/engine.js`) e o catálogo/ajustes embutidos, para compartilhar sem o servidor. **O repositório é público**: `data.json`, `parity/cases.json` e `dist/` são gerados da base local e ficam fora do git. Mudou o motor Python? Replique em `engine.js` e rode `node artifact/parity/parity.test.js` (precisa dar "PARIDADE TOTAL"). O artefato é uma foto: republique depois de mudar catálogo, ajustes ou regras.
 
 ## Como validar uma mudança
 

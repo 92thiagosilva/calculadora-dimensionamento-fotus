@@ -1,0 +1,4 @@
+# Gerados a partir da base de dados local (o repositorio e' publico: o catalogo da Fotus nao vai para o git)
+data.json
+parity/cases.json
+dist/
