@@ -32,9 +32,11 @@ from app.domain.calculo_solar.conditional_rules import (
     kit_context,
     rule_catalog,
     rule_from_dict,
+    rule_in_scope,
     rule_to_dict,
     rules_from_json,
 )
+from app.domain.calculo_solar.calc_adjustments import overload_override_note
 from app.domain.calculo_solar.mppt_limits import calculate_mppt_limits
 from app.domain.calculo_solar.validate_kit import MpptConfigInput
 from app.infra import repository
@@ -81,7 +83,9 @@ def test_rule(
 
     rule = rule_from_dict(body.rule.model_dump())
     base_adj = dataclasses.replace(repository.get_effective_adjustments(db, body.inverter_id), rules=())
-    draft_adj = dataclasses.replace(base_adj, rules=(rule,))
+    in_scope = rule_in_scope(rule, body.inverter_id)
+    draft_adj = dataclasses.replace(base_adj, rules=(rule,) if in_scope else ())
+    overload_source = repository.overload_override_source(db, body.inverter_id)
 
     cfg = None
     total_mods = None
@@ -103,7 +107,7 @@ def test_rule(
         for key, adj in (("without_rule", base_adj), ("with_rule", draft_adj)):
             item = {"limits": _limits_summary(inv, mod, body.t_min, body.t_max, adj, ctx), "validation": None}
             if cfg is not None:
-                v = build_validation_response(inv, mod, body.t_min, body.t_max, cfg, adj)
+                v = build_validation_response(inv, mod, body.t_min, body.t_max, cfg, adj, overload_source)
                 item["validation"] = {
                     "overall_badge": v["overall_badge"],
                     "overload_fail": v["overload_fail"],
@@ -128,6 +132,8 @@ def test_rule(
             "overload_pct": (total_w / inv.p_nom - 1) * 100 if inv.p_nom > 0 else 0.0,
         },
         "rule_enabled": rule.enabled,
+        "rule_in_scope": in_scope,
+        "overload_override": overload_override_note(inv, base_adj, overload_source),
         "rule_applies": outcome["with_rule"]["limits"]["applied"],
         "conditions": conditions,
         "effects": [

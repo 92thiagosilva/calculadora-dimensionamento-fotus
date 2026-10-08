@@ -18,6 +18,7 @@ import { ErrorAlert } from '../components/ErrorAlert'
 import { Modal } from '../components/Modal'
 import { AdjustmentField } from '../components/AdjustmentField'
 import { ConditionalRulesEditor } from '../components/ConditionalRulesEditor'
+import { toApiRule, type EditableRule } from '../components/ruleScope'
 import './CalcSettingsPage.css'
 
 function fmt(n: number | null, digits = 1): string {
@@ -65,6 +66,12 @@ function GlobalSettingsCard() {
     setSaving(true)
     setError(null)
     try {
+      const emptyScope = settings.conditional_rules.find((r) => r.inverter_ids != null && r.inverter_ids.length === 0)
+      if (emptyScope) {
+        setError(`A regra "${emptyScope.name}" está com "Escolher inversores" sem nenhum inversor marcado.`)
+        setSaving(false)
+        return
+      }
       const body: CalcSettingsIn = {
         overload_pct_override: settings.overload_pct_override,
         imax_tolerance_a: settings.imax_tolerance_a,
@@ -96,7 +103,11 @@ function GlobalSettingsCard() {
       <div className="calc-settings-grid">
         <AdjustmentField
           label="Sobrecarga"
-          hint="Substitui a sobrecarga cadastrada (Pot. Máx. CC / Pot. Nom. CA - 1) por um valor fixo."
+          hint={
+            settings.overload_pct_override != null
+              ? '⚠ Substitui a sobrecarga cadastrada de TODOS os inversores sem ajuste próprio. Um valor como 0% elimina qualquer sobrecarga e reprova kits acima da potência nominal. Desmarque para voltar a usar o catálogo.'
+              : 'Substitui a sobrecarga cadastrada (Pot. Máx. CC / Pot. Nom. CA - 1) por um valor fixo.'
+          }
           unit="%"
           value={settings.overload_pct_override}
           onChange={(v) => setSettings({ ...settings, overload_pct_override: v })}
@@ -322,7 +333,9 @@ function InverterOverrideForm({
     vmpp_max_delta_v: row.override?.vmpp_max_delta_v ?? null,
     dc_ac_ratio_min_pct_override: row.override?.dc_ac_ratio_min_pct_override ?? null,
   })
-  const [rules, setRules] = useState<AdjustmentRule[]>(row.override?.conditional_rules ?? [])
+  const [rules, setRules] = useState<EditableRule[]>(
+    (row.override?.conditional_rules ?? []).map((r) => ({ ...r, scope: 'this' as const })),
+  )
   const [globalRules, setGlobalRules] = useState<AdjustmentRule[]>([])
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -337,7 +350,28 @@ function InverterOverrideForm({
     setSaving(true)
     setError(null)
     try {
-      await putInverterCalcOverride(row.inverter_id, { ...values, conditional_rules: rules.length ? rules : null })
+      const emptyScope = rules.find((r) => r.scope === 'selected' && (r.inverter_ids ?? []).length === 0)
+      if (emptyScope) {
+        setError(`A regra "${emptyScope.name}" está com "Escolher inversores" sem nenhum inversor marcado.`)
+        return
+      }
+      const own = rules.filter((r) => (r.scope ?? 'this') === 'this').map(toApiRule)
+      // Regras marcadas para todos/escolhidos passam para a lista global (uma só fonte de verdade).
+      const shared = rules
+        .filter((r) => (r.scope ?? 'this') !== 'this')
+        .map((r) => ({
+          ...toApiRule(r),
+          id: r.id ?? Math.random().toString(16).slice(2, 10),
+          inverter_ids: r.scope === 'all' ? null : [...new Set([...(r.inverter_ids ?? []), row.inverter_id])],
+        }))
+      if (shared.length > 0) {
+        const current = await getCalcSettingsGlobal()
+        const sharedIds = new Set(shared.map((r) => r.id))
+        await putCalcSettingsGlobal({
+          conditional_rules: [...current.conditional_rules.filter((g) => !g.id || !sharedIds.has(g.id)), ...shared],
+        })
+      }
+      await putInverterCalcOverride(row.inverter_id, { ...values, conditional_rules: own.length ? own : null })
       onSaved()
     } catch (err) {
       setError(extractErrorMessage(err))
@@ -373,6 +407,11 @@ function InverterOverrideForm({
       <div className="calc-settings-grid">
         <AdjustmentField
           label="Sobrecarga"
+          hint={
+            values.overload_pct_override != null
+              ? '⚠ Substitui a sobrecarga cadastrada deste inversor. Desmarque para voltar a usar o catálogo (ou o padrão global).'
+              : undefined
+          }
           unit="%"
           value={values.overload_pct_override ?? null}
           onChange={(v) => setValues({ ...values, overload_pct_override: v })}
@@ -447,8 +486,8 @@ function InverterOverrideForm({
       <ConditionalRulesEditor
         rules={rules}
         onChange={setRules}
-        inheritedRules={globalRules}
-        testInverter={{ inverter_id: row.inverter_id, label: `${row.brand} ${row.model}` }}
+        inheritedRules={globalRules.filter((r) => r.inverter_ids == null || r.inverter_ids.includes(row.inverter_id))}
+        currentInverter={{ inverter_id: row.inverter_id, label: `${row.brand} ${row.model}` }}
       />
 
       <div className="bd-form__actions">

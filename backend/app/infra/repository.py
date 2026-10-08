@@ -5,13 +5,20 @@ dependencia herdado do projeto de origem."""
 
 from __future__ import annotations
 
+import dataclasses
 import datetime as dt
 from typing import List, Optional, Set
 
 from sqlalchemy.orm import Session
 
 from app.domain.calculo_solar.calc_adjustments import CalcAdjustments
-from app.domain.calculo_solar.conditional_rules import merge_rules, rule_from_dict, rule_to_dict, rules_from_json
+from app.domain.calculo_solar.conditional_rules import (
+    merge_rules,
+    rule_from_dict,
+    rule_in_scope,
+    rule_to_dict,
+    rules_from_json,
+)
 from app.domain.catalogo.inverter import Inverter, MpptCurrents
 from app.domain.catalogo.module import Module
 from app.infra.models import (
@@ -111,6 +118,9 @@ def _clean_adjustment_data(data: dict, *, global_row: bool) -> dict:
     if "conditional_rules" in data:
         raw = data["conditional_rules"]
         rules = None if raw is None else [rule_to_dict(rule_from_dict(item)) for item in raw]
+        if rules is not None and not global_row:
+            # regras gravadas no proprio inversor sempre valem para ele
+            rules = [{**r, "inverter_ids": None} for r in rules]
         data["conditional_rules"] = (rules or []) if global_row else rules
     return data
 
@@ -179,10 +189,10 @@ def get_effective_adjustments(db: Session, inverter_id: int) -> CalcAdjustments:
     valor concreto — nunca None, exceto overload_pct_override)."""
     global_row = get_or_create_global_calc_settings(db)
     override_row = get_inverter_override(db, inverter_id)
-    return _merge_adjustments(global_row, override_row)
+    return _merge_adjustments(global_row, override_row, inverter_id)
 
 
-def _merge_adjustments(global_row: CalcSettingsGlobal, override_row) -> CalcAdjustments:
+def _merge_adjustments(global_row: CalcSettingsGlobal, override_row, inverter_id: int) -> CalcAdjustments:
     def pick(field: str):
         if override_row is not None:
             value = getattr(override_row, field)
@@ -199,10 +209,24 @@ def _merge_adjustments(global_row: CalcSettingsGlobal, override_row) -> CalcAdju
         vmpp_max_delta_v=pick("vmpp_max_delta_v"),
         dc_ac_ratio_min_pct_override=pick("dc_ac_ratio_min_pct_override"),
         rules=merge_rules(
-            rules_from_json(global_row.conditional_rules),
-            rules_from_json(override_row.conditional_rules if override_row is not None else None),
+            [r for r in rules_from_json(global_row.conditional_rules) if rule_in_scope(r, inverter_id)],
+            [
+                dataclasses.replace(r, inverter_ids=None)
+                for r in rules_from_json(override_row.conditional_rules if override_row is not None else None)
+            ],
         ),
     )
+
+
+def overload_override_source(db: Session, inverter_id: int) -> Optional[str]:
+    """De onde vem o ajuste de sobrecarga efetivo deste inversor:
+    'inverter' (override proprio), 'global' ou None (usa o cadastro)."""
+    override_row = get_inverter_override(db, inverter_id)
+    if override_row is not None and override_row.overload_pct_override is not None:
+        return "inverter"
+    if get_or_create_global_calc_settings(db).overload_pct_override is not None:
+        return "global"
+    return None
 
 
 def get_all_effective_adjustments(db: Session) -> dict:
@@ -214,6 +238,6 @@ def get_all_effective_adjustments(db: Session) -> dict:
     overrides = {row.inverter_id: row for row in db.query(CalcSettingsInverterOverride).all()}
     inverter_ids = [iid for (iid,) in db.query(InverterRow.inverter_id).all()]
     return {
-        inverter_id: _merge_adjustments(global_row, overrides.get(inverter_id))
+        inverter_id: _merge_adjustments(global_row, overrides.get(inverter_id), inverter_id)
         for inverter_id in inverter_ids
     }

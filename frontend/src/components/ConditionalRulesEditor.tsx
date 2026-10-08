@@ -3,17 +3,22 @@ import { getRuleCatalog } from '../api/endpoints'
 import { extractErrorMessage } from '../api/client'
 import type { AdjustmentRule, RuleCatalog, RuleCondition, RuleEffect } from '../types/api'
 import { ErrorAlert } from './ErrorAlert'
-import { RuleTester, type RuleTestInverter } from './RuleTester'
+import { InverterScopePicker, type CurrentInverter } from './InverterScopePicker'
+import { RuleTester } from './RuleTester'
+import type { EditableRule, RuleScope } from './ruleScope'
 import { Spinner } from './Spinner'
 import './ConditionalRulesEditor.css'
 
 interface ConditionalRulesEditorProps {
-  rules: AdjustmentRule[]
-  onChange: (rules: AdjustmentRule[]) => void
+  rules: EditableRule[]
+  onChange: (rules: EditableRule[]) => void
   /** Regras herdadas (ex.: globais, exibidas no formulário de um inversor) — somente leitura. */
   inheritedRules?: AdjustmentRule[]
-  /** Inversor fixo do teste (formulário de um inversor). Sem isso, o teste deixa escolher o inversor. */
-  testInverter?: RuleTestInverter
+  /**
+   * Formulário de um inversor: o teste usa esse inversor e cada regra pode ser exclusiva dele ou passar a valer
+   * para todos/escolhidos. Sem isso (editor global), o escopo é só "todos" ou "escolher" e o teste deixa escolher o inversor.
+   */
+  currentInverter?: CurrentInverter
 }
 
 /** Modelo pronto: o caso do fabricante que libera sobrecarga maior com V max reduzido. */
@@ -57,7 +62,7 @@ export function ConditionalRulesEditor({
   rules,
   onChange,
   inheritedRules = [],
-  testInverter,
+  currentInverter,
 }: ConditionalRulesEditorProps) {
   const [catalog, setCatalog] = useState<RuleCatalog | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -72,7 +77,7 @@ export function ConditionalRulesEditor({
     return error ? <ErrorAlert message={error} /> : <Spinner label="Carregando tipos de regra…" />
   }
 
-  function updateRule(idx: number, patch: Partial<AdjustmentRule>) {
+  function updateRule(idx: number, patch: Partial<EditableRule>) {
     onChange(rules.map((r, i) => (i === idx ? { ...r, ...patch } : r)))
   }
 
@@ -114,7 +119,7 @@ export function ConditionalRulesEditor({
           key={rule.id ?? `new-${idx}`}
           rule={rule}
           catalog={catalog}
-          testInverter={testInverter}
+          currentInverter={currentInverter}
           onChange={(patch) => updateRule(idx, patch)}
           onRemove={() => onChange(rules.filter((_, i) => i !== idx))}
         />
@@ -140,17 +145,18 @@ export function ConditionalRulesEditor({
 function RuleCard({
   rule,
   catalog,
-  testInverter,
+  currentInverter,
   onChange,
   onRemove,
 }: {
-  rule: AdjustmentRule
+  rule: EditableRule
   catalog: RuleCatalog
-  testInverter?: RuleTestInverter
-  onChange: (patch: Partial<AdjustmentRule>) => void
+  currentInverter?: CurrentInverter
+  onChange: (patch: Partial<EditableRule>) => void
   onRemove: () => void
 }) {
   const [testing, setTesting] = useState(false)
+  const scope: RuleScope = currentInverter ? (rule.scope ?? 'this') : rule.inverter_ids == null ? 'all' : 'selected'
 
   function patchCondition(i: number, patch: Partial<RuleCondition>) {
     onChange({ conditions: rule.conditions.map((c, j) => (j === i ? { ...c, ...patch } : c)) })
@@ -292,6 +298,17 @@ function RuleCard({
         </button>
       </div>
 
+      <InverterScopePicker
+        scope={scope}
+        ids={rule.inverter_ids ?? []}
+        currentInverter={currentInverter}
+        onChange={(next, ids) =>
+          currentInverter
+            ? onChange({ scope: next, inverter_ids: next === 'all' ? null : next === 'selected' ? ids : undefined })
+            : onChange({ inverter_ids: next === 'all' ? null : ids })
+        }
+      />
+
       <p className="rule-card__summary muted">{describeRule(rule, catalog)}</p>
 
       <div>
@@ -299,7 +316,7 @@ function RuleCard({
           {testing ? 'Fechar teste' : '🧪 Testar regra'}
         </button>
       </div>
-      {testing && <RuleTester rule={rule} fixedInverter={testInverter} />}
+      {testing && <RuleTester rule={rule} fixedInverter={currentInverter} />}
     </div>
   )
 }

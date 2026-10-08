@@ -201,6 +201,9 @@ export function StepStrings({
   const overloadPercent = inverter.p_max_cc != null ? (inverter.p_max_cc / inverter.p_nom - 1) * 100 : null
   const minRatioPercent = adjustments?.dc_ac_ratio_min_pct_override ?? 70
   const rules = adjustments?.conditional_rules ?? []
+  const overloadOverride = adjustments?.overload_pct_override ?? null
+  const overloadReplaced =
+    overloadOverride != null && overloadPercent != null && Math.abs(overloadOverride - overloadPercent) >= 0.05
 
   // Regras condicionais dependem do tamanho do kit (ex.: acima de 50% de
   // sobrecarga o V max cai e cabem menos módulos em série). Sempre que a
@@ -303,6 +306,17 @@ export function StepStrings({
           </span>
         </div>
       </div>
+
+      {overloadReplaced && overloadOverride != null && overloadPercent != null && (
+        <div className="alert alert--warning strings-rules-banner">
+          <div>
+            <strong>Sobrecarga do catálogo substituída: </strong>
+            a sobrecarga cadastrada deste inversor (+{fmt1(overloadPercent)}%, {fmt1((inverter.p_max_cc ?? 0) / 1000)} kW) está sendo
+            substituída por +{fmt1(overloadOverride)}% ({fmt1((inverter.p_nom * (1 + overloadOverride / 100)) / 1000)} kW) por um ajuste em
+            Configurações de Cálculo; é esse limite que valerá na validação do kit.
+          </div>
+        </div>
+      )}
 
       {appliedRules.length > 0 && (
         <div className="alert alert--warning strings-rules-banner">

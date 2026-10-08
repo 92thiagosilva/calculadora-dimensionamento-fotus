@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from 'react'
 import { getInverters, getModules, testRule } from '../api/endpoints'
 import { extractErrorMessage } from '../api/client'
 import type {
-  AdjustmentRule,
   Inverter,
   Module,
   RuleTestOutcome,
@@ -10,6 +9,7 @@ import type {
   RuleTestResponse,
 } from '../types/api'
 import { Badge, toneFromStatus } from './Badge'
+import { toApiRule, type EditableRule } from './ruleScope'
 import { ErrorAlert } from './ErrorAlert'
 import { Spinner } from './Spinner'
 import './RuleTester.css'
@@ -20,7 +20,7 @@ export interface RuleTestInverter {
 }
 
 interface RuleTesterProps {
-  rule: AdjustmentRule
+  rule: EditableRule
   /** Quando informado (formulário de um inversor), o teste usa esse inversor; senão o usuário escolhe. */
   fixedInverter?: RuleTestInverter
 }
@@ -103,7 +103,7 @@ export function RuleTester({ rule, fixedInverter }: RuleTesterProps) {
       module_id: pickedModule.module_id,
       t_min: tMin,
       t_max: tMax,
-      rule,
+      rule: toApiRule(rule),
       ...(mode === 'kwp'
         ? { total_kwp: totalKwp }
         : { series, strings, ...(mpptCount === '' ? {} : { mppt_count: mpptCount }) }),
@@ -236,7 +236,9 @@ function RuleTestResult({ result }: { result: RuleTestResponse }) {
   const { kit, with_rule: withRule, without_rule: withoutRule } = result
   const hasVerdict = withRule.validation != null
 
-  const verdict = !result.rule_enabled
+  const verdict = !result.rule_in_scope
+    ? { tone: 'muted', text: 'Este inversor está FORA do escopo da regra — ela não seria aplicada a ele.' }
+    : !result.rule_enabled
     ? { tone: 'muted', text: 'A regra está DESATIVADA — não seria aplicada em nenhum kit.' }
     : result.rule_applies
       ? { tone: 'warning', text: 'A regra SE APLICA a este kit.' }
@@ -245,6 +247,13 @@ function RuleTestResult({ result }: { result: RuleTestResponse }) {
   return (
     <div className="rule-tester__result">
       <div className={`rule-tester__verdict rule-tester__verdict--${verdict.tone}`}>{verdict.text}</div>
+
+      {result.overload_override && (
+        <div className="alert alert--warning">
+          <strong>Sobrecarga do catálogo substituída: </strong>
+          {result.overload_override.message}
+        </div>
+      )}
 
       <p className="rule-tester__kitline">
         {result.inverter.brand} {result.inverter.model} · kit de <strong>{num(kit.total_kwp, 2)} kWp</strong>

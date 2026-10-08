@@ -150,6 +150,8 @@ export interface ValidateKitResponse {
   applied_rules?: AppliedRule[]
   /** true quando as regras condicionais liberaram algo que só com os ajustes fixos reprovaria. */
   rules_relaxed?: boolean
+  /** Presente quando um ajuste de Sobrecarga substitui a sobrecarga cadastrada. */
+  overload_override?: OverloadOverride | null
 }
 
 export interface RuleCondition {
@@ -168,6 +170,8 @@ export interface AdjustmentRule {
   id?: string | null
   name: string
   enabled: boolean
+  /** Escopo da regra global: ids dos inversores atingidos; null/ausente = todos. */
+  inverter_ids?: number[] | null
   conditions: RuleCondition[]
   effects: RuleEffect[]
 }
@@ -217,7 +221,19 @@ export interface RuleTestOutcome {
   validation: RuleTestValidation | null
 }
 
+/** Aviso: a sobrecarga cadastrada do inversor está sendo substituída por um ajuste de Configurações. */
+export interface OverloadOverride {
+  override_pct: number
+  catalog_pct: number
+  catalog_limit_kw: number
+  effective_limit_kw: number
+  source: 'global' | 'inverter' | null
+  message: string
+}
+
 export interface RuleTestResponse {
+  rule_in_scope: boolean
+  overload_override: OverloadOverride | null
   inverter: { brand: string; model: string; p_nom_kw: number; num_mppt: number }
   kit: { total_kwp: number; total_mods: number | null; overload_pct: number }
   rule_enabled: boolean

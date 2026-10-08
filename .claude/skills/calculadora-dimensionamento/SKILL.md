@@ -54,7 +54,8 @@ Não reordene operações nem "simplifique" fórmulas: ponto flutuante não é a
 2. **Regras condicionais** (`conditional_rules.apply_rules`): avaliadas sobre o kit (potência total dos módulos), alteram o inversor já ajustado.
 3. `validate_kit` com esse inversor → `recompute_badge_from_per_mppt`.
 4. **Ressalvas**: com qualquer ajuste ativo, roda também com o inversor cru do catálogo e compara; cada coisa que só passa por causa de ajuste/regra vira um motivo em `ressalva_reasons` e o badge "Aprovado" vira "Aprovado com ressalva". Nunca se aprova silenciosamente algo fora do cadastro.
-5. **Regra comercial CC/CA mínima** (`routes_dimensionamento._apply_dc_ac_ratio_rule`): potência dos módulos ≥ X% da potência nominal CA do inversor, X = 70 por padrão; abaixo disso → "Reprovado" com `dc_ac_ratio_note`. O motor original é preservado em `formula_badge`.
+5. **Aviso de sobrecarga substituída** (`calc_adjustments.overload_override_note`): quando `overload_pct_override` (global ou do inversor) difere da sobrecarga do catálogo, `/validate-kit` e `/test-rule` devolvem `overload_override` (`message`, limites do catálogo e efetivo, `source` = global/inverter). `ResultPanel`, `StepStrings`, o testador e o campo Sobrecarga das Configurações exibem o aviso.
+6. **Regra comercial CC/CA mínima** (`routes_dimensionamento._apply_dc_ac_ratio_rule`): potência dos módulos ≥ X% da potência nominal CA do inversor, X = 70 por padrão; abaixo disso → "Reprovado" com `dc_ac_ratio_note`. O motor original é preservado em `formula_badge`.
 
 `build_validation_response` (routes_dimensionamento.py) é o pipeline completo; é compartilhado por `/validate-kit` e pelo teste de regras.
 
@@ -77,13 +78,15 @@ Servem para casos em que o fabricante muda limites conforme o tamanho do kit. Ex
 - **Regra** = `id`, `name`, `enabled`, `conditions` (todas verdadeiras — E lógico; vazia = sempre vale) e `effects`.
 - **Condição**: `metric` ∈ `overload_pct` (sobrecarga do kit = CC/CA − 1, em %) | `total_kwp`; `op` ∈ `>`, `>=`, `<`, `<=`; `value`. Comparação arredondada a 9 casas para um kit exatamente no limite não cair do lado errado. **"Ultrapassar 50 %" é `>`; `>=` já aplica a regra a exatamente 50 %.**
 - **Efeito**: `target` ∈ `v_max`, `v_mpp_min`, `v_mpp_max`, `imax`, `isc` (todos os MPPTs), `overload_limit_pct`; `mode` ∈ `set` (valor absoluto), `delta` (soma), `percent` (variação %, > −100). Resultado nunca negativo. Efeito em campo que o inversor não tem é ignorado.
-- **Escopo**: global + do inversor; mesmo `id` → a do inversor substitui a global (serve para desativar uma global num modelo). Uma regra global vale para **todos** os inversores.
+- **Escopo por inversor (SKU)**: a regra tem `inverter_ids` (lista de `inverter_id`; `null` = todos). Regra global com `null` vale para todos os inversores; com lista, só para os listados (lista vazia é rejeitada). O filtro acontece em `repository._merge_adjustments` via `rule_in_scope`, então `effective-adjustments`, validação, `mppt-limits` e sugestão já veem só as regras que alcançam aquele inversor. Regras gravadas no override de um inversor sempre valem para ele (o `inverter_ids` delas é ignorado/zerado).
+- **Mescla**: globais que alcançam o inversor + próprias dele; mesmo `id` → a do inversor substitui a global (serve para desativar uma global num modelo). **Regras se empilham**: duas regras de V max −15% aplicáveis ao mesmo inversor dão −27,75% (1100 → ~795 V). Ao criar uma regra nova que substitui outra, edite/desative a antiga.
+- **Escolher onde aplicar na tela**: cada regra tem o seletor "Aplicar esta regra em" (`InverterScopePicker`): no editor global → todos / escolher inversores (busca, filtro por marca, "marcar os N da lista"); dentro de "Ajustar" de um inversor → só neste / todos / escolher (o atual fica sempre marcado). Ao salvar o modal, regras marcadas como todos/escolhidos **saem da lista do inversor e vão para a lista global** com o escopo (uma única fonte de verdade); `EditableRule.scope` é só estado de tela, removido por `toApiRule`.
 - **Extensão**: para um novo tipo de regra, registre uma métrica em `METRICS` e/ou um alvo em `TARGETS`; `GET /api/admin/calc-settings/rule-catalog` expõe os registros e o editor da tela os oferece sem mudar o frontend.
 - Regras inválidas gravadas são ignoradas com aviso no log (`rules_from_json`), não derrubam o cálculo.
 - Persistência: coluna JSON `conditional_rules` nas duas tabelas, criada por `run_lightweight_migrations` (não há Alembic).
 - O `ressalva` de regra só é gerado quando a regra **liberou** algo (`rules_relaxed`); regra que só restringe aparece em `applied_rules` e em "Regras condicionais aplicadas" no `ResultPanel`.
 - **Tempo real no assistente**: `GET /mppt-limits?...&total_kwp=` avaliam as regras para o kit atual; `StepStrings` rechama com debounce de 250 ms conforme o kit muda e oferece o botão "Redimensionar módulos em série ao novo limite" (não troca os valores sozinho — reduzir módulos pode tirar o kit da faixa da regra).
-- **Testar antes de salvar**: botão "🧪 Testar regra" → `POST /api/admin/calc-settings/test-rule` (restrito, somente leitura). Kit por `series`×`strings`(×`mppt_count`) **ou** `total_kwp`; compara "sem a regra" × "com a regra" (só a regra testada entra).
+- **Testar antes de salvar**: botão "🧪 Testar regra" → `POST /api/admin/calc-settings/test-rule` (restrito, somente leitura). Kit por `series`×`strings`(×`mppt_count`) **ou** `total_kwp`; compara "sem a regra" × "com a regra" (só a regra testada entra). Informa `rule_in_scope` (inversor fora do escopo → a regra não se aplica) e `overload_override`.
 
 ## Sugestão automática (`suggestion.py`)
 
@@ -111,7 +114,7 @@ Autenticação: header `X-Dev-User-Email` (modo dev; `AUTH_MODE=production` só 
 
 ## Armadilhas conhecidas
 
-- **Sobrecarga global em 0 %**: no `AdjustmentField`, marcar "Definir valor customizado" preenche **0**; salvar assim substitui a sobrecarga de todos os inversores por 0 % (kit acima da potência nominal reprova). Confira os ajustes globais ao investigar reprovações por overload.
+- **Sobrecarga global em 0 %**: no `AdjustmentField`, marcar "Definir valor customizado" preenche **0**; salvar assim substitui a sobrecarga de todos os inversores por 0 % (kit acima da potência nominal reprova). Agora a tela avisa (campo Sobrecarga, resultado, passo de strings e testador), mas confira os ajustes globais ao investigar reprovações por overload.
 - `Base.metadata.create_all` não adiciona colunas a tabelas existentes: toda coluna nova precisa entrar em `run_lightweight_migrations` (`infra/db.py`).
 - `frontend/src/api/client.ts` fixa `API_BASE_URL = 'http://127.0.0.1:8010'`. Pelo código, um navegador em outra máquina da rede chamaria o próprio localhost para a API; confirme o acesso pela rede antes de assumir que funciona.
 - URL direta de rota do frontend (ex.: `/calc-settings`) dá 404 no servidor de produção (sem fallback de SPA); entre pela raiz e navegue pelo menu.

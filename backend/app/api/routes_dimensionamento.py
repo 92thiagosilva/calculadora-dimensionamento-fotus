@@ -18,6 +18,7 @@ from app.domain.calculo_solar.calc_adjustments import (
     CalcAdjustments,
     build_adjusted_inverter,
     check_dc_ac_ratio_with_adjustments,
+    overload_override_note,
     validate_kit_with_rules,
 )
 from app.domain.calculo_solar.commercial_rules import recompute_badge_from_per_mppt
@@ -63,7 +64,9 @@ def _apply_dc_ac_ratio_rule(out: dict, inv, adjustments: CalcAdjustments) -> Non
                 out["overall_badge"] = "Aprovado com ressalva"
 
 
-def build_validation_response(inv, mod, t_min: float, t_max: float, cfg, adjustments: CalcAdjustments) -> dict:
+def build_validation_response(
+    inv, mod, t_min: float, t_max: float, cfg, adjustments: CalcAdjustments, overload_source: Optional[str] = None
+) -> dict:
     """Pipeline completo de validacao de um kit (ajustes estaticos +
     regras condicionais + regra comercial CC/CA) no formato da API.
     Compartilhado por /validate-kit e pelo teste de regras (somente leitura)
@@ -78,6 +81,7 @@ def build_validation_response(inv, mod, t_min: float, t_max: float, cfg, adjustm
     out["ressalva_reasons"] = ressalva_reasons
     out["applied_rules"] = [vars(a) for a in adjusted.applied_rules]
     out["rules_relaxed"] = adjusted.rules_relaxed
+    out["overload_override"] = overload_override_note(inv, adjustments, overload_source)
     _apply_dc_ac_ratio_rule(out, inv, adjustments)
     return out
 
@@ -187,7 +191,10 @@ def validate_kit_endpoint(
     ]
     adjustments = repository.get_effective_adjustments(db, body.inverter_id)
     with map_tool_errors():
-        return build_validation_response(inv, mod, body.t_min, body.t_max, cfg, adjustments)
+        return build_validation_response(
+            inv, mod, body.t_min, body.t_max, cfg, adjustments,
+            overload_source=repository.overload_override_source(db, body.inverter_id),
+        )
 
 
 @router.post("/suggest-kit")

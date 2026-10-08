@@ -240,6 +240,43 @@ def validate_kit_with_adjustments(
     return out.result, out.reasons
 
 
+def overload_override_note(
+    inv: Inverter, adjustments: CalcAdjustments, source: Optional[str] = None
+) -> Optional[dict]:
+    """Avisa quando um ajuste de Sobrecarga (global ou do inversor) esta
+    SUBSTITUINDO a sobrecarga cadastrada no catalogo — ex.: um 0% salvo
+    sem querer zera a sobrecarga de todos os inversores e reprova kits
+    que o cadastro aceitaria. Retorna None quando nao ha substituicao."""
+    override = adjustments.overload_pct_override
+    if override is None or inv.p_max_cc is None or inv.p_nom <= 0:
+        return None
+    catalog_pct = (inv.p_max_cc / inv.p_nom - 1) * 100
+    if abs(override - catalog_pct) < 0.05:
+        return None
+    effective_kw = inv.p_nom * (1 + override / 100) / 1000
+    origin = {"global": " (ajuste global)", "inverter": " (ajuste deste inversor)"}.get(source or "", "")
+    direction = "reduz" if override < catalog_pct else "amplia"
+    where = (
+        "em Configurações de Cálculo → \"Ajustar\" deste inversor"
+        if source == "inverter"
+        else "em Configurações de Cálculo → Padrão global"
+    )
+    message = (
+        f"A sobrecarga cadastrada deste inversor (+{_fmt(catalog_pct)}%, limite de {_fmt(inv.p_max_cc / 1000)} kW) "
+        f"está sendo substituída por +{_fmt(override)}% (limite de {_fmt(effective_kw)} kW){origin} em "
+        f"Configurações de Cálculo, o que {direction} o limite de sobrecarga. Para voltar a usar a sobrecarga do "
+        f"cadastro, {where}, desmarque \"Definir valor customizado\" em Sobrecarga e salve."
+    )
+    return {
+        "override_pct": override,
+        "catalog_pct": catalog_pct,
+        "catalog_limit_kw": inv.p_max_cc / 1000,
+        "effective_limit_kw": effective_kw,
+        "source": source,
+        "message": message,
+    }
+
+
 def check_dc_ac_ratio_with_adjustments(
     total_kwp: float, p_nom_w: float, adjustments: CalcAdjustments
 ) -> Tuple[DcAcRatioCheck, float, Optional[str]]:

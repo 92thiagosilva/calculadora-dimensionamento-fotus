@@ -26,9 +26,12 @@ metrica em `METRICS` (o que medir no kit) e/ou um novo alvo em `TARGETS`
 (o que alterar no inversor) — a tela de Configuracoes le esses
 registros pela API e passa a oferece-los sem mudar o frontend.
 
-Regras globais valem para todos os inversores; regras de um inversor
-somam-se as globais e, havendo o mesmo `id`, a do inversor substitui a
-global (permite, por exemplo, desativar uma regra global para um modelo).
+Regras globais valem para todos os inversores — ou so para os listados
+em `inverter_ids` (escopo da regra; None = todos). Regras de um inversor
+somam-se as globais que o alcancam e, havendo o mesmo `id`, a do
+inversor substitui a global (permite, por exemplo, desativar uma regra
+global para um modelo). Regras gravadas no proprio inversor sempre valem
+para ele (o escopo e' ignorado).
 """
 
 from __future__ import annotations
@@ -209,6 +212,8 @@ class AdjustmentRule:
     conditions: Tuple[RuleCondition, ...] = ()
     effects: Tuple[RuleEffect, ...] = ()
     enabled: bool = True
+    inverter_ids: Optional[Tuple[int, ...]] = None
+    """Escopo: ids dos inversores atingidos; None = todos."""
 
 
 @dataclass(frozen=True)
@@ -256,6 +261,17 @@ def rule_from_dict(d: Dict[str, Any]) -> AdjustmentRule:
         effects.append(RuleEffect(target, mode, value))
     _require(len(effects) > 0, "Toda regra precisa de pelo menos um efeito.")
 
+    inverter_ids: Optional[Tuple[int, ...]] = None
+    raw_ids = d.get("inverter_ids")
+    if raw_ids is not None:
+        _require(
+            isinstance(raw_ids, (list, tuple)) and len(raw_ids) > 0,
+            "Escolha ao menos um inversor ou aplique a regra a todos.",
+        )
+        for v in raw_ids:
+            _require(isinstance(v, int) and not isinstance(v, bool), "Lista de inversores invalida.")
+        inverter_ids = tuple(sorted(set(raw_ids)))
+
     rule_id = str(d.get("id") or "").strip() or uuid.uuid4().hex[:8]
     return AdjustmentRule(
         id=rule_id,
@@ -263,6 +279,7 @@ def rule_from_dict(d: Dict[str, Any]) -> AdjustmentRule:
         conditions=tuple(conditions),
         effects=tuple(effects),
         enabled=bool(d.get("enabled", True)),
+        inverter_ids=inverter_ids,
     )
 
 
@@ -273,7 +290,13 @@ def rule_to_dict(rule: AdjustmentRule) -> Dict[str, Any]:
         "enabled": rule.enabled,
         "conditions": [{"metric": c.metric, "op": c.op, "value": c.value} for c in rule.conditions],
         "effects": [{"target": e.target, "mode": e.mode, "value": e.value} for e in rule.effects],
+        "inverter_ids": None if rule.inverter_ids is None else list(rule.inverter_ids),
     }
+
+
+def rule_in_scope(rule: AdjustmentRule, inverter_id: int) -> bool:
+    """A regra alcanca este inversor? (escopo `inverter_ids`; None = todos)."""
+    return rule.inverter_ids is None or inverter_id in rule.inverter_ids
 
 
 def rules_from_json(raw: Optional[Iterable[Dict[str, Any]]]) -> Tuple[AdjustmentRule, ...]:

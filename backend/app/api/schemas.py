@@ -187,6 +187,8 @@ class AdjustmentRuleIO(BaseModel):
     id: Optional[str] = None
     name: str = Field(min_length=1, max_length=120)
     enabled: bool = True
+    inverter_ids: Optional[List[int]] = None
+    """Escopo da regra global: ids dos inversores atingidos; null = todos."""
     conditions: List[RuleConditionIO] = Field(default_factory=list)
     effects: List[RuleEffectIO] = Field(min_length=1)
 

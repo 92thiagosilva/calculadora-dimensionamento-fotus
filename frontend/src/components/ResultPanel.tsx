@@ -44,6 +44,13 @@ export function ResultPanel({ result, module, inverter }: ResultPanelProps) {
         </div>
       </div>
 
+      {result.overload_override && (
+        <div className="alert alert--warning result-note">
+          <strong>Sobrecarga do catálogo substituída: </strong>
+          {result.overload_override.message}
+        </div>
+      )}
+
       {result.wiring_note && (
         <div className="alert alert--danger result-note">
           <strong>Atenção: </strong>
