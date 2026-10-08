@@ -1,7 +1,13 @@
 import { useEffect, useMemo, useState } from 'react'
 import { autoConfigStrings, getEffectiveAdjustments, getMpptLimits } from '../../api/endpoints'
 import { extractErrorMessage } from '../../api/client'
-import type { CalcAdjustmentsOut, Inverter, Module, MpptConfigEntry, MpptLimits } from '../../types/api'
+import type {
+  CalcAdjustmentsOut,
+  Inverter,
+  Module,
+  MpptConfigEntry,
+  MpptLimitsWithRules,
+} from '../../types/api'
 import { Spinner } from '../../components/Spinner'
 import { ErrorAlert } from '../../components/ErrorAlert'
 import './StepStrings.css'
@@ -33,17 +39,19 @@ function fmt2(n: number): string {
  *
  * `lim` já vem calculado pelo backend em cima do inversor AJUSTADO (com
  * os ajustes de I max/Isc/V max/V MPP configurados em Configurações de
- * Cálculo já somados) — por isso os limites mostrados aqui já são os
- * efetivos, não os cadastrados "crus".
+ * Cálculo já somados e, quando o kit atende, as regras condicionais) —
+ * por isso os limites mostrados aqui já são os efetivos, não os
+ * cadastrados "crus".
  */
 function explainStringsIssue(
   entry: { series: number; strings: number },
-  lim: MpptLimits,
+  lim: MpptLimitsWithRules,
   inverter: Inverter,
   adjustments: CalcAdjustmentsOut | null,
 ): string[] {
   const reasons: string[] = []
-  const vMax = inverter.v_max != null ? inverter.v_max + (adjustments?.vmax_delta_v ?? 0) : null
+  const vMax =
+    lim.effective_v_max ?? (inverter.v_max != null ? inverter.v_max + (adjustments?.vmax_delta_v ?? 0) : null)
   const vMppMin = inverter.v_mpp_min != null ? inverter.v_mpp_min + (adjustments?.vmpp_min_delta_v ?? 0) : null
 
   if (entry.series > 0 && entry.series < lim.min_series) {
@@ -107,7 +115,7 @@ export function StepStrings({
   onBack,
   onNext,
 }: StepStringsProps) {
-  const [limits, setLimits] = useState<(MpptLimits | null)[]>([])
+  const [limits, setLimits] = useState<(MpptLimitsWithRules | null)[]>([])
   const [adjustments, setAdjustments] = useState<CalcAdjustmentsOut | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -192,6 +200,55 @@ export function StepStrings({
   const ratioPercent = inverter.p_nom > 0 ? (totalKwp / (inverter.p_nom / 1000)) * 100 : 0
   const overloadPercent = inverter.p_max_cc != null ? (inverter.p_max_cc / inverter.p_nom - 1) * 100 : null
   const minRatioPercent = adjustments?.dc_ac_ratio_min_pct_override ?? 70
+  const rules = adjustments?.conditional_rules ?? []
+
+  // Regras condicionais dependem do tamanho do kit (ex.: acima de 50% de
+  // sobrecarga o V max cai e cabem menos módulos em série). Sempre que a
+  // potência do arranjo muda, o backend reavalia as regras e devolve os
+  // limites por MPPT já recalculados — sem spinner, para não piscar a tela.
+  useEffect(() => {
+    if (loading || rules.length === 0) return
+    let cancelled = false
+    const timer = setTimeout(async () => {
+      try {
+        const next = await Promise.all(
+          Array.from({ length: inverter.num_mppt }, (_, idx) =>
+            getMpptLimits({
+              inverter_id: inverter.inverter_id,
+              module_id: module.module_id,
+              t_min: tMin,
+              t_max: tMax,
+              mppt_idx: idx,
+              total_kwp: totalKwp,
+            }),
+          ),
+        )
+        if (!cancelled) setLimits(next)
+      } catch {
+        // mantém os limites anteriores; a validação final no backend continua valendo
+      }
+    }, 250)
+    return () => {
+      cancelled = true
+      clearTimeout(timer)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading, rules.length, totalKwp, module.module_id, inverter.inverter_id, inverter.num_mppt, tMin, tMax])
+
+  const appliedRules = limits.find((l) => l && l.applied_rules.length > 0)?.applied_rules ?? []
+  const overLimitMppts = limits.filter(
+    (l, idx) => l && !unused[idx] && (mpptConfig[idx]?.series ?? 0) > l.max_series,
+  ).length
+
+  function resizeSeriesToLimits() {
+    onChange(
+      mpptConfig.map((c, idx) => {
+        const l = limits[idx]
+        if (!c || !l || c.series <= l.max_series) return c
+        return { ...c, series: l.max_series }
+      }),
+    )
+  }
 
   if (loading) return <Spinner label="Calculando limites de MPPT…" />
   if (error) return <ErrorAlert message={error} />
@@ -246,6 +303,31 @@ export function StepStrings({
           </span>
         </div>
       </div>
+
+      {appliedRules.length > 0 && (
+        <div className="alert alert--warning strings-rules-banner">
+          <div>
+            <strong>Regra condicional ativa — limites recalculados automaticamente:</strong>
+            <ul className="strings-card__warning-list">
+              {appliedRules.map((r) => (
+                <li key={r.rule_id}>{r.description}</li>
+              ))}
+            </ul>
+            {overLimitMppts > 0 && (
+              <button type="button" className="btn btn--outline btn--sm" onClick={resizeSeriesToLimits}>
+                Redimensionar módulos em série ao novo limite ({overLimitMppts} MPPT)
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+      {appliedRules.length === 0 && rules.some((r) => r.enabled) && (
+        <p className="muted strings-rules-note">
+          Este inversor tem regras condicionais ({rules.filter((r) => r.enabled).map((r) => r.name).join('; ')}). Enquanto
+          o kit não atingir as condições, valem os limites cadastrados; ao atingir, os limites por MPPT são
+          recalculados automaticamente.
+        </p>
+      )}
 
       <div className="strings-grid">
         {Array.from({ length: inverter.num_mppt }, (_, idx) => {

@@ -92,6 +92,19 @@ export interface MpptLimits extends CorrectedModuleSpecs {
   limiting_factor: string
 }
 
+/** Regra condicional que o kit atendeu (ver Configurações de Cálculo → Regras condicionais). */
+export interface AppliedRule {
+  rule_id: string
+  name: string
+  description: string
+}
+
+/** Resposta de /mppt-limits: os limites já refletem as regras aplicáveis ao kit informado (`total_kwp`). */
+export interface MpptLimitsWithRules extends MpptLimits {
+  effective_v_max: number | null
+  applied_rules: AppliedRule[]
+}
+
 export interface MpptConfigEntry {
   series: number
   strings: number
@@ -133,9 +146,99 @@ export interface ValidateKitResponse {
   dc_ac_ratio_note?: string | null
   /** Explicações de quais ajustes configurados (Imax/Isc/V max/V MPP min/max/sobrecarga) foram decisivos para a aprovação. */
   ressalva_reasons?: string[]
+  /** Regras condicionais cujas condições o kit atendeu. */
+  applied_rules?: AppliedRule[]
+  /** true quando as regras condicionais liberaram algo que só com os ajustes fixos reprovaria. */
+  rules_relaxed?: boolean
+}
+
+export interface RuleCondition {
+  metric: string
+  op: string
+  value: number
+}
+
+export interface RuleEffect {
+  target: string
+  mode: string
+  value: number
+}
+
+export interface AdjustmentRule {
+  id?: string | null
+  name: string
+  enabled: boolean
+  conditions: RuleCondition[]
+  effects: RuleEffect[]
+}
+
+export interface RuleCatalog {
+  metrics: { key: string; label: string; unit: string }[]
+  operators: { key: string; label: string }[]
+  targets: { key: string; label: string; unit: string }[]
+  modes: { key: string; label: string }[]
+}
+
+export interface RuleTestRequest {
+  inverter_id: number
+  module_id: number
+  t_min: number
+  t_max: number
+  /** Kit por configuração de MPPT (série x strings, em `mppt_count` MPPTs — todos se omitido)... */
+  series?: number
+  strings?: number
+  mppt_count?: number
+  /** ...ou direto pela potência total dos módulos. */
+  total_kwp?: number
+  rule: AdjustmentRule
+}
+
+export interface RuleTestLimits {
+  applied: boolean
+  v_max: number | null
+  overload_limit_kw: number | null
+  min_series: number
+  max_series: number
+  max_strings: number
+}
+
+export interface RuleTestValidation {
+  overall_badge: OverallBadge
+  overload_fail: boolean
+  all_mppt_ok: boolean
+  total_kwp: number
+  ressalva_reasons: string[]
+  dc_ac_ratio_note: string | null
+}
+
+export interface RuleTestOutcome {
+  limits: RuleTestLimits
+  /** null no modo "por potência total" (só os limites são calculados). */
+  validation: RuleTestValidation | null
+}
+
+export interface RuleTestResponse {
+  inverter: { brand: string; model: string; p_nom_kw: number; num_mppt: number }
+  kit: { total_kwp: number; total_mods: number | null; overload_pct: number }
+  rule_enabled: boolean
+  rule_applies: boolean
+  conditions: {
+    metric: string
+    label: string
+    unit: string
+    measured: number
+    op: string
+    op_label: string
+    threshold: number
+    ok: boolean
+  }[]
+  effects: { target: string; label: string; unit: string; mode: string; before: number[]; after: number[] }[]
+  without_rule: RuleTestOutcome
+  with_rule: RuleTestOutcome
 }
 
 export interface CalcAdjustmentsOut {
+  conditional_rules: AdjustmentRule[]
   overload_pct_override: number | null
   imax_tolerance_a: number
   isc_tolerance_a: number
@@ -146,6 +249,7 @@ export interface CalcAdjustmentsOut {
 }
 
 export interface CalcSettingsIn {
+  conditional_rules?: AdjustmentRule[] | null
   overload_pct_override?: number | null
   imax_tolerance_a?: number | null
   isc_tolerance_a?: number | null
@@ -156,6 +260,7 @@ export interface CalcSettingsIn {
 }
 
 export interface CalcSettingsGlobalOut {
+  conditional_rules: AdjustmentRule[]
   overload_pct_override: number | null
   imax_tolerance_a: number
   isc_tolerance_a: number
@@ -168,6 +273,7 @@ export interface CalcSettingsGlobalOut {
 }
 
 export interface InverterOverrideOut {
+  conditional_rules: AdjustmentRule[] | null
   inverter_id: number
   overload_pct_override: number | null
   imax_tolerance_a: number | null

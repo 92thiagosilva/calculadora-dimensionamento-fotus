@@ -18,9 +18,10 @@ from app.domain.calculo_solar.calc_adjustments import (
     CalcAdjustments,
     build_adjusted_inverter,
     check_dc_ac_ratio_with_adjustments,
-    validate_kit_with_adjustments,
+    validate_kit_with_rules,
 )
 from app.domain.calculo_solar.commercial_rules import recompute_badge_from_per_mppt
+from app.domain.calculo_solar.conditional_rules import AppliedRule, apply_rules, kit_context, rule_to_dict
 from app.domain.calculo_solar.corrections import apply_module_corrections
 from app.domain.calculo_solar.mppt_limits import calculate_mppt_limits
 from app.domain.calculo_solar.suggestion import suggest_kit
@@ -62,6 +63,25 @@ def _apply_dc_ac_ratio_rule(out: dict, inv, adjustments: CalcAdjustments) -> Non
                 out["overall_badge"] = "Aprovado com ressalva"
 
 
+def build_validation_response(inv, mod, t_min: float, t_max: float, cfg, adjustments: CalcAdjustments) -> dict:
+    """Pipeline completo de validacao de um kit (ajustes estaticos +
+    regras condicionais + regra comercial CC/CA) no formato da API.
+    Compartilhado por /validate-kit e pelo teste de regras (somente leitura)
+    das Configuracoes de Calculo."""
+    adjusted = validate_kit_with_rules(inv, mod, t_min, t_max, cfg, adjustments)
+    result, ressalva_reasons = adjusted.result, adjusted.reasons
+    result = recompute_badge_from_per_mppt(result)
+    out = vars(result).copy()
+    out["per_mppt"] = [{**vars(p), "limits": vars(p.limits)} for p in result.per_mppt]
+    if ressalva_reasons and out["overall_badge"] == "Aprovado":
+        out["overall_badge"] = "Aprovado com ressalva"
+    out["ressalva_reasons"] = ressalva_reasons
+    out["applied_rules"] = [vars(a) for a in adjusted.applied_rules]
+    out["rules_relaxed"] = adjusted.rules_relaxed
+    _apply_dc_ac_ratio_rule(out, inv, adjustments)
+    return out
+
+
 def _get_module(db: Session, module_id: int):
     mod = repository.get_module(db, module_id)
     if mod is None:
@@ -100,7 +120,9 @@ def effective_adjustments(
     tolerancia de Imax configurada)."""
     _get_inverter(db, inverter_id)
     adj = repository.get_effective_adjustments(db, inverter_id)
-    return vars(adj)
+    out = {k: v for k, v in vars(adj).items() if k != "rules"}
+    out["conditional_rules"] = [rule_to_dict(r) for r in adj.rules]
+    return out
 
 
 @router.get("/mppt-limits")
@@ -110,16 +132,30 @@ def mppt_limits(
     t_min: float,
     t_max: float,
     mppt_idx: int,
+    total_kwp: Optional[float] = None,
     db: Session = Depends(get_session),
     _user: CurrentUser = Depends(get_current_user),
 ) -> dict:
+    """Limites do MPPT. Sem `total_kwp` so valem os ajustes estaticos;
+    com `total_kwp` (potencia total dos modulos do kit, em kWp) tambem
+    sao avaliadas as regras condicionais — ex.: V max menor quando a
+    sobrecarga do kit passa de X%. A resposta traz `applied_rules` e
+    `effective_v_max` (V max usado no calculo) para o frontend explicar."""
     inv = _get_inverter(db, inverter_id)
     mod = _get_module(db, module_id)
     adjustments = repository.get_effective_adjustments(db, inverter_id)
     adjusted_inv = build_adjusted_inverter(inv, adjustments)
+    applied: list[AppliedRule] = []
+    if total_kwp is not None:
+        adjusted_inv, applied = apply_rules(
+            adjusted_inv, adjustments.rules, kit_context(total_kwp * 1000, inv.p_nom)
+        )
     with map_tool_errors():
         result = calculate_mppt_limits(adjusted_inv, mod, t_min, t_max, mppt_idx)
-    return vars(result)
+    out = vars(result).copy()
+    out["effective_v_max"] = adjusted_inv.v_max
+    out["applied_rules"] = [vars(a) for a in applied]
+    return out
 
 
 @router.post("/auto-config-strings")
@@ -151,15 +187,7 @@ def validate_kit_endpoint(
     ]
     adjustments = repository.get_effective_adjustments(db, body.inverter_id)
     with map_tool_errors():
-        result, ressalva_reasons = validate_kit_with_adjustments(inv, mod, body.t_min, body.t_max, cfg, adjustments)
-    result = recompute_badge_from_per_mppt(result)
-    out = vars(result).copy()
-    out["per_mppt"] = [{**vars(p), "limits": vars(p.limits)} for p in result.per_mppt]
-    if ressalva_reasons and out["overall_badge"] == "Aprovado":
-        out["overall_badge"] = "Aprovado com ressalva"
-    out["ressalva_reasons"] = ressalva_reasons
-    _apply_dc_ac_ratio_rule(out, inv, adjustments)
-    return out
+        return build_validation_response(inv, mod, body.t_min, body.t_max, cfg, adjustments)
 
 
 @router.post("/suggest-kit")
@@ -192,6 +220,7 @@ def suggest_kit_endpoint(
         val = vars(s.validation).copy()
         val["per_mppt"] = [{**vars(p), "limits": vars(p.limits)} for p in s.validation.per_mppt]
         val["ressalva_reasons"] = s.ressalva_reasons
+        val["applied_rules"] = [vars(a) for a in s.applied_rules]
         result.append(
             {
                 "module_id": s.module_id,

@@ -7,11 +7,17 @@ import {
   putInverterCalcOverride,
 } from '../api/endpoints'
 import { extractErrorMessage } from '../api/client'
-import type { CalcSettingsGlobalOut, CalcSettingsIn, InverterCalcSettingsRow } from '../types/api'
+import type {
+  AdjustmentRule,
+  CalcSettingsGlobalOut,
+  CalcSettingsIn,
+  InverterCalcSettingsRow,
+} from '../types/api'
 import { Spinner } from '../components/Spinner'
 import { ErrorAlert } from '../components/ErrorAlert'
 import { Modal } from '../components/Modal'
 import { AdjustmentField } from '../components/AdjustmentField'
+import { ConditionalRulesEditor } from '../components/ConditionalRulesEditor'
 import './CalcSettingsPage.css'
 
 function fmt(n: number | null, digits = 1): string {
@@ -67,6 +73,7 @@ function GlobalSettingsCard() {
         vmpp_min_delta_v: settings.vmpp_min_delta_v,
         vmpp_max_delta_v: settings.vmpp_max_delta_v,
         dc_ac_ratio_min_pct_override: settings.dc_ac_ratio_min_pct_override,
+        conditional_rules: settings.conditional_rules,
       }
       const updated = await putCalcSettingsGlobal(body)
       setSettings(updated)
@@ -166,6 +173,12 @@ function GlobalSettingsCard() {
         />
       </div>
 
+      <h3 className="calc-settings-card__subtitle">Regras condicionais (valem para todos os inversores)</h3>
+      <ConditionalRulesEditor
+        rules={settings.conditional_rules}
+        onChange={(rules) => setSettings({ ...settings, conditional_rules: rules })}
+      />
+
       <div className="calc-settings-card__footer">
         {savedAt && !saving && <span className="muted">Salvo.</span>}
         <button type="button" className="btn btn--primary" onClick={handleSave} disabled={saving}>
@@ -225,6 +238,7 @@ function InverterSettingsTable() {
                 <th>I max / MPPT</th>
                 <th>V max</th>
                 <th>V MPP min–max</th>
+                <th>Regras condicionais</th>
                 <th>Ajuste próprio?</th>
                 <th></th>
               </tr>
@@ -241,6 +255,13 @@ function InverterSettingsTable() {
                     <td>{fmt(r.v_max, 0)} V</td>
                     <td>
                       {fmt(r.v_mpp_min, 0)}–{fmt(r.v_mpp_max, 0)} V
+                    </td>
+                    <td>
+                      {r.override?.conditional_rules?.length ? (
+                        <span className="badge badge--warning badge--sm">{r.override.conditional_rules.length}</span>
+                      ) : (
+                        <span className="muted">—</span>
+                      )}
                     </td>
                     <td>
                       {hasOverride ? (
@@ -301,14 +322,22 @@ function InverterOverrideForm({
     vmpp_max_delta_v: row.override?.vmpp_max_delta_v ?? null,
     dc_ac_ratio_min_pct_override: row.override?.dc_ac_ratio_min_pct_override ?? null,
   })
+  const [rules, setRules] = useState<AdjustmentRule[]>(row.override?.conditional_rules ?? [])
+  const [globalRules, setGlobalRules] = useState<AdjustmentRule[]>([])
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    getCalcSettingsGlobal()
+      .then((g) => setGlobalRules(g.conditional_rules))
+      .catch(() => setGlobalRules([]))
+  }, [])
 
   async function handleSave() {
     setSaving(true)
     setError(null)
     try {
-      await putInverterCalcOverride(row.inverter_id, values)
+      await putInverterCalcOverride(row.inverter_id, { ...values, conditional_rules: rules.length ? rules : null })
       onSaved()
     } catch (err) {
       setError(extractErrorMessage(err))
@@ -413,6 +442,14 @@ function InverterOverrideForm({
           defaultLabel="Usar padrão global"
         />
       </div>
+
+      <h3 className="calc-settings-card__subtitle">Regras condicionais deste inversor</h3>
+      <ConditionalRulesEditor
+        rules={rules}
+        onChange={setRules}
+        inheritedRules={globalRules}
+        testInverter={{ inverter_id: row.inverter_id, label: `${row.brand} ${row.model}` }}
+      />
 
       <div className="bd-form__actions">
         <button type="button" className="btn btn--outline" onClick={handleClear} disabled={saving}>

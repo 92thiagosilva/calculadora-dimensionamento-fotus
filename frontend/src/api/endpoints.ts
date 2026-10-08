@@ -16,7 +16,10 @@ import type {
   Module,
   ModuleIn,
   MpptConfigEntry,
-  MpptLimits,
+  MpptLimitsWithRules,
+  RuleCatalog,
+  RuleTestRequest,
+  RuleTestResponse,
   SuggestKitResponse,
   ThermalRegion,
   ValidateKitResponse,
@@ -46,7 +49,9 @@ export const getMpptLimits = (params: {
   t_min: number
   t_max: number
   mppt_idx: number
-}) => apiClient.get<MpptLimits>('/api/dimensionamento/mppt-limits', params)
+  /** Potência total dos módulos do kit (kWp): habilita a avaliação das regras condicionais. */
+  total_kwp?: number
+}) => apiClient.get<MpptLimitsWithRules>('/api/dimensionamento/mppt-limits', params)
 
 export const autoConfigStrings = (body: {
   inverter_id: number
@@ -83,6 +88,9 @@ export const getEffectiveAdjustments = (inverterId: number) =>
   apiClient.get<CalcAdjustmentsOut>('/api/dimensionamento/effective-adjustments', { inverter_id: inverterId })
 
 // ---- Configurações de cálculo (restrito) ----
+export const getRuleCatalog = () => apiClient.get<RuleCatalog>('/api/admin/calc-settings/rule-catalog')
+export const testRule = (body: RuleTestRequest) =>
+  apiClient.post<RuleTestResponse>('/api/admin/calc-settings/test-rule', body)
 export const getCalcSettingsGlobal = () =>
   apiClient.get<CalcSettingsGlobalOut>('/api/admin/calc-settings/global')
 export const putCalcSettingsGlobal = (body: CalcSettingsIn) =>

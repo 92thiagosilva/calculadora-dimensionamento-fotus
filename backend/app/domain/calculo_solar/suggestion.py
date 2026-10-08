@@ -16,9 +16,10 @@ from app.domain.calculo_solar.calc_adjustments import (
     CalcAdjustments,
     build_adjusted_inverter,
     check_dc_ac_ratio_with_adjustments,
-    validate_kit_with_adjustments,
+    validate_kit_with_rules,
 )
 from app.domain.calculo_solar.commercial_rules import recompute_badge_from_per_mppt
+from app.domain.calculo_solar.conditional_rules import AppliedRule, rule_variant_inverters
 from app.domain.calculo_solar.mppt_limits import calculate_mppt_limits
 from app.domain.calculo_solar.validate_kit import (
     MpptConfigInput,
@@ -116,6 +117,7 @@ class KitSuggestionOutput:
     validation: ValidateKitOutput
     score: float
     ressalva_reasons: List[str]
+    applied_rules: List[AppliedRule] = dataclasses.field(default_factory=list)
 
 
 def _norm_brand(s: str) -> str:
@@ -212,6 +214,18 @@ def suggest_kit(
             adjustments = adjustments_by_inverter_id.get(inv.inverter_id, default_adjustments)
             adjusted_inv = build_adjusted_inverter(inv, adjustments)
             candidates = _candidate_mppt_configs(adjusted_inv, mod, t_min, t_max)
+            # Regras condicionais (ex.: V max menor acima de X% de
+            # sobrecarga) mudam os limites de serie/strings so para kits
+            # que as satisfazem. Geramos tambem candidatos dentro dos
+            # limites de cada regra em vigor; a validacao abaixo checa
+            # as condicoes de verdade e descarta o que nao se aplica.
+            if adjustments.rules:
+                seen_cfgs = {tuple(c) for c in candidates}
+                for variant_inv in rule_variant_inverters(adjusted_inv, adjustments.rules):
+                    for cfg_variant in _candidate_mppt_configs(variant_inv, mod, t_min, t_max):
+                        if tuple(cfg_variant) not in seen_cfgs:
+                            seen_cfgs.add(tuple(cfg_variant))
+                            candidates.append(cfg_variant)
             # Guarda TODOS os tamanhos validos e distintos para este par
             # modulo+inversor (nao so o "melhor") — o objetivo aqui e
             # mostrar a faixa inteira permitida pela Fotus, do minimo de
@@ -220,11 +234,10 @@ def suggest_kit(
 
             for cfg_padded in candidates:
                 try:
-                    validation, ressalva_reasons = validate_kit_with_adjustments(
-                        inv, mod, t_min, t_max, cfg_padded, adjustments
-                    )
+                    adjusted = validate_kit_with_rules(inv, mod, t_min, t_max, cfg_padded, adjustments)
                 except ToolError:
                     continue
+                validation, ressalva_reasons = adjusted.result, adjusted.reasons
 
                 validation = recompute_badge_from_per_mppt(validation)
                 if ressalva_reasons and validation.overall_badge == "Aprovado":
@@ -277,6 +290,7 @@ def suggest_kit(
                         validation=validation,
                         score=score,
                         ressalva_reasons=ressalva_reasons,
+                        applied_rules=adjusted.applied_rules,
                     )
                 )
 

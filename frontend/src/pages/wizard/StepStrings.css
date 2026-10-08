@@ -127,3 +127,16 @@
   flex-direction: column;
   gap: 0.35rem;
 }
+
+.strings-rules-banner {
+  margin-bottom: 1rem;
+}
+
+.strings-rules-banner .btn {
+  margin-top: 0.5rem;
+}
+
+.strings-rules-note {
+  font-size: 0.85rem;
+  margin: 0 0 1rem;
+}

@@ -20,6 +20,11 @@ cadastrado no catalogo (sem ajuste algum):
   70% (potencia DC dos modulos / potencia nominal CA do inversor) por
   um valor absoluto (0-100%). Default = usa 70%.
 
+Alem desses parametros fixos, `rules` guarda REGRAS CONDICIONAIS (ver
+`conditional_rules.py`): alteracoes no inversor que so valem quando o kit
+atende a certas condicoes (ex.: acima de 50% de sobrecarga o V max cai
+15%, conforme o fabricante). Ficam por inversor e/ou globais.
+
 Sempre que um ajuste (diferente do default) for o motivo de uma
 aprovacao que NAO teria acontecido com os valores cadastrados, o kit
 fica "Aprovado com ressalva" e o motivo especifico e' explicado —
@@ -34,6 +39,12 @@ from typing import List, Optional, Tuple
 
 from app.domain.catalogo.inverter import Inverter, MpptCurrents
 from app.domain.calculo_solar.commercial_rules import DC_AC_RATIO_MIN_PCT_DEFAULT, DcAcRatioCheck, check_min_dc_ac_ratio
+from app.domain.calculo_solar.conditional_rules import (
+    AdjustmentRule,
+    AppliedRule,
+    apply_rules,
+    kit_context,
+)
 from app.domain.calculo_solar.validate_kit import (
     InverterForValidate,
     MpptConfigInput,
@@ -54,6 +65,7 @@ class CalcAdjustments:
     vmpp_min_delta_v: float = 0.0
     vmpp_max_delta_v: float = 0.0
     dc_ac_ratio_min_pct_override: Optional[float] = None
+    rules: Tuple[AdjustmentRule, ...] = ()
 
     def is_default(self) -> bool:
         return (
@@ -64,6 +76,7 @@ class CalcAdjustments:
             and self.vmpp_min_delta_v == 0
             and self.vmpp_max_delta_v == 0
             and self.dc_ac_ratio_min_pct_override is None
+            and not self.rules
         )
 
 
@@ -97,29 +110,63 @@ def _fmt(n: float) -> str:
     return f"{n:.1f}"
 
 
-def validate_kit_with_adjustments(
+@dataclass(frozen=True)
+class AdjustedValidation:
+    result: ValidateKitOutput
+    """Resultado final (inversor com ajustes estaticos E regras condicionais)."""
+    reasons: List[str]
+    """Motivos de ressalva — quando nao vazia, o chamador troca o badge 'Aprovado' por 'Aprovado com ressalva'."""
+    applied_rules: List[AppliedRule]
+    """Regras condicionais cujas condicoes o kit satisfez."""
+    rules_relaxed: bool
+    """True se as regras condicionais fizeram algum item passar que nao passaria so com os ajustes estaticos."""
+
+
+def _total_dc_w(cfg: List[Optional[MpptConfigInput]], mod: ModuleForMpptLimits) -> float:
+    return sum((c.series or 0) * (c.strings or 0) for c in cfg if c) * mod.pnom
+
+
+def _rules_relaxed(before: ValidateKitOutput, after: ValidateKitOutput) -> bool:
+    if before.overload_fail and not after.overload_fail:
+        return True
+    after_by_idx = {p.mppt_idx: p for p in after.per_mppt}
+    for b in before.per_mppt:
+        a = after_by_idx.get(b.mppt_idx)
+        if a is not None and ((a.series_ok and not b.series_ok) or (a.strings_ok and not b.strings_ok)):
+            return True
+    return False
+
+
+def validate_kit_with_rules(
     inv: InverterForValidate,
     mod: ModuleForMpptLimits,
     t_min: float,
     t_max: float,
     cfg: List[Optional[MpptConfigInput]],
     adjustments: CalcAdjustments,
-) -> Tuple[ValidateKitOutput, List[str]]:
+) -> AdjustedValidation:
     """Roda `validate_kit` com o inversor ajustado (o resultado real,
-    usado para aprovar/reprovar). Quando ha algum ajuste configurado,
-    roda TAMBEM com o inversor cru (cadastrado) e compara badge a
-    badge — cada diferenca vira um motivo de ressalva explicito.
+    usado para aprovar/reprovar):
 
-    Retorna (resultado_final, lista_de_motivos_de_ressalva). Quando a
-    lista nao esta vazia, o chamador deve trocar `overall_badge` do
-    resultado para "Aprovado com ressalva".
+    1. ajustes estaticos (tolerancias, deltas de tensao, sobrecarga);
+    2. regras condicionais — avaliadas sobre o kit (`cfg`) informado; as
+       que se aplicam alteram o inversor antes do calculo final.
+
+    Quando ha algum ajuste configurado, roda TAMBEM com o inversor cru
+    (cadastrado) e compara badge a badge — cada diferenca vira um
+    motivo de ressalva explicito.
     """
-    adjusted_inv = build_adjusted_inverter(inv, adjustments)
-    adjusted_result = validate_kit(adjusted_inv, mod, t_min, t_max, cfg)
+    static_inv = build_adjusted_inverter(inv, adjustments)
+    static_result = validate_kit(static_inv, mod, t_min, t_max, cfg)
+
+    ctx = kit_context(_total_dc_w(cfg, mod), inv.p_nom)
+    rule_inv, applied_rules = apply_rules(static_inv, adjustments.rules, ctx)
+    final_result = validate_kit(rule_inv, mod, t_min, t_max, cfg) if applied_rules else static_result
 
     if adjustments.is_default():
-        return adjusted_result, []
+        return AdjustedValidation(final_result, [], [], False)
 
+    adjusted_inv, adjusted_result = static_inv, static_result
     raw_result = validate_kit(inv, mod, t_min, t_max, cfg)
     reasons: List[str] = []
 
@@ -172,7 +219,25 @@ def validate_kit_with_adjustments(
                     f"com a tolerância de corrente configurada: {', '.join(current_notes)}."
                 )
 
-    return adjusted_result, reasons
+    rules_relaxed = bool(applied_rules) and _rules_relaxed(static_result, final_result)
+    if rules_relaxed:
+        reasons.extend(a.description for a in applied_rules)
+
+    return AdjustedValidation(final_result, reasons, applied_rules, rules_relaxed)
+
+
+def validate_kit_with_adjustments(
+    inv: InverterForValidate,
+    mod: ModuleForMpptLimits,
+    t_min: float,
+    t_max: float,
+    cfg: List[Optional[MpptConfigInput]],
+    adjustments: CalcAdjustments,
+) -> Tuple[ValidateKitOutput, List[str]]:
+    """Versao simplificada de `validate_kit_with_rules`: retorna so
+    (resultado_final, motivos_de_ressalva)."""
+    out = validate_kit_with_rules(inv, mod, t_min, t_max, cfg, adjustments)
+    return out.result, out.reasons
 
 
 def check_dc_ac_ratio_with_adjustments(

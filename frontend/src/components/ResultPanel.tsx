@@ -15,6 +15,7 @@ function fmt(n: number, digits = 2): string {
 export function ResultPanel({ result, module, inverter }: ResultPanelProps) {
   const tone = toneFromStatus(result.overall_badge)
   const ressalvaReasons = result.ressalva_reasons ?? []
+  const appliedRules = result.rules_relaxed ? [] : (result.applied_rules ?? [])
 
   return (
     <div className="result-panel">
@@ -54,6 +55,17 @@ export function ResultPanel({ result, module, inverter }: ResultPanelProps) {
         <div className="alert alert--danger result-note">
           <strong>Atenção: </strong>
           {result.dc_ac_ratio_note}
+        </div>
+      )}
+
+      {appliedRules.length > 0 && (
+        <div className="alert alert--warning result-note">
+          <strong>Regras condicionais aplicadas: </strong>
+          <ul className="result-note__reasons">
+            {appliedRules.map((r) => (
+              <li key={r.rule_id}>{r.description}</li>
+            ))}
+          </ul>
         </div>
       )}
 

@@ -1,0 +1,113 @@
+.rules-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.rules-editor__intro {
+  margin: 0;
+  font-size: 0.85rem;
+}
+
+.rules-editor__inherited {
+  font-size: 0.82rem;
+  background: var(--color-panel);
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 0.6rem 0.9rem;
+}
+
+.rules-editor__inherited ul {
+  margin: 0.35rem 0 0;
+  padding-left: 1.1rem;
+}
+
+.rules-editor__off {
+  opacity: 0.55;
+}
+
+.rules-editor__actions {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.rule-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 0.9rem 1rem;
+}
+
+.rule-card--off {
+  opacity: 0.6;
+}
+
+.rule-card__header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.rule-card__toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.rule-card__name {
+  flex: 1 1 14rem;
+  min-width: 0;
+  font-weight: 600;
+}
+
+.rule-card__section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.rule-card__label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--color-text-muted);
+}
+
+.rule-card__empty {
+  margin: 0;
+  font-size: 0.82rem;
+}
+
+.rule-card__add {
+  align-self: flex-start;
+}
+
+.rule-card__summary {
+  margin: 0;
+  font-size: 0.8rem;
+  font-style: italic;
+}
+
+.rule-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.rule-row__grow {
+  flex: 1 1 16rem;
+  min-width: 0;
+}
+
+.rule-row__value {
+  width: 7rem;
+}

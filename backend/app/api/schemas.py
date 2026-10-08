@@ -3,7 +3,9 @@ from __future__ import annotations
 from datetime import datetime
 from typing import List, Literal, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
+
+from app.domain.calculo_solar.conditional_rules import RuleValidationError, rule_from_dict
 
 
 class ModuleOut(BaseModel):
@@ -165,6 +167,62 @@ class MeOut(BaseModel):
 # ---- Ajustes de calculo (global + por inversor) ----
 
 
+class RuleConditionIO(BaseModel):
+    metric: str
+    op: str
+    value: float
+
+
+class RuleEffectIO(BaseModel):
+    target: str
+    mode: str
+    value: float
+
+
+class AdjustmentRuleIO(BaseModel):
+    """Regra condicional de ajuste (ver
+    app/domain/calculo_solar/conditional_rules.py). `id` pode ser omitido
+    ao criar — o backend gera um."""
+
+    id: Optional[str] = None
+    name: str = Field(min_length=1, max_length=120)
+    enabled: bool = True
+    conditions: List[RuleConditionIO] = Field(default_factory=list)
+    effects: List[RuleEffectIO] = Field(min_length=1)
+
+    @model_validator(mode="after")
+    def _validate_against_registry(self):
+        try:
+            rule_from_dict(self.model_dump())
+        except RuleValidationError as exc:
+            raise ValueError(str(exc)) from exc
+        return self
+
+
+class RuleTestRequest(BaseModel):
+    """Simula uma regra AINDA NAO SALVA contra um kit. O kit e dado por
+    `series` x `strings` em `mppt_count` MPPTs (todos, se omitido) ou, mais
+    direto para sondar o limite de uma condicao, pela potencia total
+    `total_kwp`. Nao grava nada."""
+
+    inverter_id: int
+    module_id: int
+    t_min: float = 0
+    t_max: float = 60
+    series: Optional[int] = Field(default=None, ge=1)
+    strings: Optional[int] = Field(default=None, ge=1)
+    mppt_count: Optional[int] = Field(default=None, ge=1)
+    total_kwp: Optional[float] = Field(default=None, ge=0)
+    rule: AdjustmentRuleIO
+
+    @model_validator(mode="after")
+    def _kit_given_one_way(self):
+        by_config = self.series is not None and self.strings is not None
+        if by_config == (self.total_kwp is not None):
+            raise ValueError("Informe o kit por 'series' e 'strings' OU pela potencia total ('total_kwp'), nao os dois.")
+        return self
+
+
 class CalcSettingsIn(BaseModel):
     """Corpo de PUT tanto para o global quanto para override por
     inversor. Campos omitidos = nao alterar; campos enviados como
@@ -177,6 +235,7 @@ class CalcSettingsIn(BaseModel):
     vmpp_min_delta_v: Optional[float] = Field(default=None, ge=-500, le=500)
     vmpp_max_delta_v: Optional[float] = Field(default=None, ge=-500, le=500)
     dc_ac_ratio_min_pct_override: Optional[float] = Field(default=None, ge=0, le=100)
+    conditional_rules: Optional[List[AdjustmentRuleIO]] = None
 
 
 class CalcSettingsGlobalOut(BaseModel):
@@ -187,6 +246,7 @@ class CalcSettingsGlobalOut(BaseModel):
     vmpp_min_delta_v: float
     vmpp_max_delta_v: float
     dc_ac_ratio_min_pct_override: Optional[float]
+    conditional_rules: List[AdjustmentRuleIO] = Field(default_factory=list)
     updated_at: Optional[datetime] = None
     updated_by: Optional[str] = None
 
@@ -200,6 +260,7 @@ class InverterOverrideOut(BaseModel):
     vmpp_min_delta_v: Optional[float]
     vmpp_max_delta_v: Optional[float]
     dc_ac_ratio_min_pct_override: Optional[float]
+    conditional_rules: Optional[List[AdjustmentRuleIO]] = None
     updated_at: Optional[datetime] = None
     updated_by: Optional[str] = None
 

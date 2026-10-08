@@ -102,6 +102,8 @@ class CalcSettingsGlobal(Base):
       potencia DC dos modulos em relacao a potencia nominal CA do
       inversor (padrao fixo de 70%) por um valor absoluto (0-100%). None
       = usa o padrao de 70%.
+    - `conditional_rules`: lista (JSON) de regras condicionais globais —
+      ver `app/domain/calculo_solar/conditional_rules.py`. None = nenhuma.
     """
 
     __tablename__ = "calc_settings_global"
@@ -114,6 +116,7 @@ class CalcSettingsGlobal(Base):
     vmpp_min_delta_v: Mapped[float] = mapped_column(Float, default=0.0)
     vmpp_max_delta_v: Mapped[float] = mapped_column(Float, default=0.0)
     dc_ac_ratio_min_pct_override: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    conditional_rules: Mapped[Optional[List[dict]]] = mapped_column(JSON, nullable=True)
     updated_at: Mapped[dt.datetime] = mapped_column(DateTime, default=dt.datetime.utcnow, onupdate=dt.datetime.utcnow)
     updated_by: Mapped[Optional[str]] = mapped_column(String, nullable=True)
 
@@ -121,7 +124,9 @@ class CalcSettingsGlobal(Base):
 class CalcSettingsInverterOverride(Base):
     """Override por inversor especifico — mesmos campos do global, mas
     todos nullable: None significa 'usar o valor global' para aquele
-    campo (nao precisa sobrescrever tudo de uma vez)."""
+    campo (nao precisa sobrescrever tudo de uma vez). `conditional_rules`
+    sao as regras condicionais PROPRIAS deste inversor (somam-se as
+    globais; mesmo `id` substitui a global)."""
 
     __tablename__ = "calc_settings_inverter_override"
 
@@ -133,5 +138,6 @@ class CalcSettingsInverterOverride(Base):
     vmpp_min_delta_v: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
     vmpp_max_delta_v: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
     dc_ac_ratio_min_pct_override: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    conditional_rules: Mapped[Optional[List[dict]]] = mapped_column(JSON, nullable=True)
     updated_at: Mapped[dt.datetime] = mapped_column(DateTime, default=dt.datetime.utcnow, onupdate=dt.datetime.utcnow)
     updated_by: Mapped[Optional[str]] = mapped_column(String, nullable=True)

@@ -11,6 +11,7 @@ from typing import List, Optional, Set
 from sqlalchemy.orm import Session
 
 from app.domain.calculo_solar.calc_adjustments import CalcAdjustments
+from app.domain.calculo_solar.conditional_rules import merge_rules, rule_from_dict, rule_to_dict, rules_from_json
 from app.domain.catalogo.inverter import Inverter, MpptCurrents
 from app.domain.catalogo.module import Module
 from app.infra.models import (
@@ -98,7 +99,20 @@ _CALC_ADJUSTMENT_FIELDS = (
     "vmpp_min_delta_v",
     "vmpp_max_delta_v",
     "dc_ac_ratio_min_pct_override",
+    "conditional_rules",
 )
+
+
+def _clean_adjustment_data(data: dict, *, global_row: bool) -> dict:
+    """Valida cada regra condicional e garante um `id` (gera quando
+    ausente) antes de gravar. No global, null vira lista vazia; no
+    override, null significa 'so as regras globais'."""
+    data = dict(data)
+    if "conditional_rules" in data:
+        raw = data["conditional_rules"]
+        rules = None if raw is None else [rule_to_dict(rule_from_dict(item)) for item in raw]
+        data["conditional_rules"] = (rules or []) if global_row else rules
+    return data
 
 
 def get_or_create_global_calc_settings(db: Session) -> CalcSettingsGlobal:
@@ -113,6 +127,7 @@ def get_or_create_global_calc_settings(db: Session) -> CalcSettingsGlobal:
 
 def update_global_calc_settings(db: Session, data: dict, user_email: str) -> CalcSettingsGlobal:
     row = get_or_create_global_calc_settings(db)
+    data = _clean_adjustment_data(data, global_row=True)
     for field in _CALC_ADJUSTMENT_FIELDS:
         if field in data:
             setattr(row, field, data[field])
@@ -134,6 +149,7 @@ def update_inverter_override(
     if row is None:
         row = CalcSettingsInverterOverride(inverter_id=inverter_id)
         db.add(row)
+    data = _clean_adjustment_data(data, global_row=False)
     for field in _CALC_ADJUSTMENT_FIELDS:
         if field in data:
             setattr(row, field, data[field])
@@ -182,6 +198,10 @@ def _merge_adjustments(global_row: CalcSettingsGlobal, override_row) -> CalcAdju
         vmpp_min_delta_v=pick("vmpp_min_delta_v"),
         vmpp_max_delta_v=pick("vmpp_max_delta_v"),
         dc_ac_ratio_min_pct_override=pick("dc_ac_ratio_min_pct_override"),
+        rules=merge_rules(
+            rules_from_json(global_row.conditional_rules),
+            rules_from_json(override_row.conditional_rules if override_row is not None else None),
+        ),
     )
 
 

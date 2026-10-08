@@ -38,6 +38,8 @@ def run_lightweight_migrations() -> None:
     columns_to_ensure = [
         ("calc_settings_global", "dc_ac_ratio_min_pct_override", "FLOAT"),
         ("calc_settings_inverter_override", "dc_ac_ratio_min_pct_override", "FLOAT"),
+        ("calc_settings_global", "conditional_rules", "JSON"),
+        ("calc_settings_inverter_override", "conditional_rules", "JSON"),
     ]
     with engine.connect() as conn:
         for table, column, sql_type in columns_to_ensure:
