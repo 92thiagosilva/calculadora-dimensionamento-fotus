@@ -17,3 +17,11 @@ $logFile = Join-Path $logDir "server.log"
 
 Set-Location $backend
 & $python -m uvicorn app.main:app --host 0.0.0.0 --port 8010 --app-dir $backend *>> $logFile
+
+# Propaga o codigo de saida do servidor: sem isso o script termina com 0
+# (sucesso) mesmo quando o servidor morre, e o "reiniciar em caso de falha"
+# da Tarefa Agendada nunca dispara.
+$code = $LASTEXITCODE
+Add-Content -Path $logFile -Value ("[{0}] Servidor encerrado (codigo {1})." -f (Get-Date -Format "yyyy-MM-dd HH:mm:ss"), $code)
+if ($code -eq 0) { $code = 1 }  # servidor so deve parar por queda; encerramento "limpo" tambem conta como falha
+exit $code
