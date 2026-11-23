@@ -5,6 +5,25 @@ dimensionamento módulo × inversor por uma interface moderna para o
 time comercial, preservando 100% das fórmulas e regras de negócio da
 planilha oficial da Fotus.
 
+## Documentação
+
+| Documento | Para quê |
+|---|---|
+| **este README** | Visão geral, como rodar e os comandos do dia a dia |
+| [`docs/ARQUITETURA.md`](docs/ARQUITETURA.md) | **Leitura obrigatória para quem vai integrar ou mexer no cálculo**: os três artefatos (HTML canônico, projeto TypeScript, este repositório), como o motor funciona, a API, os dados, a integração com outra plataforma e as lacunas conhecidas |
+| [`artifact/README.md`](artifact/README.md) | Cópia compartilhável da calculadora (página única, motor em JavaScript) |
+| [`.claude/skills/calculadora-dimensionamento/SKILL.md`](.claude/skills/calculadora-dimensionamento/SKILL.md) | Resumo técnico para o Claude Code trabalhar neste projeto |
+
+## Origem do cálculo (em uma tela)
+
+Estes três artefatos nasceram um do outro. O resultado **oficial** é o do primeiro:
+
+1. **Calculadora HTML canônica da Fotus** (`calculadora-dimensionamento.html`): fonte da verdade das fórmulas e do catálogo original.
+2. **Projeto TypeScript `fotus-dimens`** (servidor MCP): primeiro porte do HTML, com testes que provam paridade bit a bit (inclusive os 61.070 pares módulo × inversor, segundo o README dele).
+3. **Este repositório**: portou o motor do TypeScript para Python e acrescentou a aplicação web, o catálogo editável, ajustes configuráveis e regras novas.
+
+Os arquivos 1 e 2 **não estão neste repositório** (ficam em um projeto separado). Os comentários do tipo "BIT-EXATA ... linhas 840-865 ... portada de fotus-dimens (TS)" em `backend/app/domain/calculo_solar/` apontam para essa cadeia. Detalhes e diferenças entre os três em [`docs/ARQUITETURA.md`](docs/ARQUITETURA.md).
+
 ## Estrutura
 
 ```
@@ -20,6 +39,8 @@ frontend/   Interface React (Vite + TypeScript)
 | Comparativo Área | Página "Comparativo de Área" — aberto a todo o time comercial |
 | Mismatch | Página "Mismatch" — **área restrita** |
 | BD (banco de dados de produtos) | Página "Base de Dados (BD)" — **área restrita**, com CRUD completo |
+| *(novo, não existia na planilha)* Sugestão automática | Modo "Sugestão automática" do assistente — aberto a todo o time comercial |
+| *(novo)* Ajustes e regras de cálculo | Página "Configurações" — **área restrita**: tolerâncias, mínimo CC/CA, regras condicionais por inversor e teste de regra |
 
 O motor de cálculo (correção térmica, limites de MPPT, validação de
 kit, sugestão automática) foi portado para Python a partir de um
@@ -53,10 +74,10 @@ npm install
 npm run dev
 ```
 
-Acesse `http://localhost:5173`. No login (temporário, ver seção SSO
-abaixo) digite o e-mail que você cadastrou com `seed_admin.py` para
-entrar com acesso à área restrita, ou qualquer outro e-mail para
-testar como usuário comercial comum.
+Acesse `http://localhost:5173`. Não há tela de login: todo visitante entra
+como `comercial@fotus.com.br`. Para acessar a área restrita, use "Trocar de
+usuário" no cabeçalho e informe o e-mail que você cadastrou com
+`seed_admin.py` (ver seção SSO abaixo).
 
 ## Hospedagem na sua máquina (para o time acessar)
 
@@ -85,9 +106,10 @@ acessível pelo time na rede da Fotus.
 
 ## Autenticação — SSO Microsoft 365 (pendente)
 
-Hoje a aplicação usa um **login de desenvolvimento** (o usuário só
-digita o e-mail, sem senha nem validação real) — combinado
-temporariamente até a configuração do SSO corporativo.
+Hoje a aplicação usa uma **identificação de desenvolvimento**: o backend
+confia no cabeçalho `X-Dev-User-Email`, sem senha nem validação real.
+**Isso não é segurança**; só pode rodar em rede confiável até a
+configuração do SSO corporativo.
 
 Para ativar o login real com as contas Microsoft 365 da Fotus, é
 necessário:
@@ -150,5 +172,8 @@ corrigido.
 
 ```powershell
 cd backend
-.\.venv\Scripts\python -m pytest tests/golden -v
+.\.venv\Scripts\python -m pytest -q          # todos os testes (80)
+.\.venv\Scripts\python -m pytest tests/golden -v   # só a paridade do motor canônico (37)
 ```
+
+O que cada suíte prova está em [`docs/ARQUITETURA.md`](docs/ARQUITETURA.md#14-como-a-exatidão-é-garantida-testes-e-paridade).
