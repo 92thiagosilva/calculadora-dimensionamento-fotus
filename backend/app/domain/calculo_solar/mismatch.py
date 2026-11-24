@@ -9,11 +9,20 @@ parametros eletricos, corrige Voc/Vmp/Imp na janela termica
 "Conservador" (0..60 C, fixa na planilha — nao configuravel pelo
 usuario nesta aba) e aplica tolerancia de 3%.
 
-ATENCAO — fidelidade bit-exata a planilha (celula por celula):
+DESVIO DELIBERADO DA PLANILHA (decisao Fotus, 2026-11-24): a tensao minima
+`Vmp_min` usa o coeficiente de TENSAO (`coef_v`), nao o de potencia
+(`coef_pmp` da celula J13 da planilha). E' a mesma regra do motor de
+dimensionamento (ver corrections.py). A tabela de 8 parametros continua
+comparando o `Coef Pmp` como um parametro eletrico qualquer; so a conta do
+`Vmp_min` mudou.
+
+ATENCAO — fidelidade bit-exata a planilha (celula por celula), exceto o
+desvio acima:
   J12 (delta Voc_max) = |Voc_max_orig - Voc_max_sub| / Voc_max_orig
       onde Voc_max = voc * (1 + (t_min - 25) * coef_v / 100)      [t_min=0]
   J13 (delta Vmp_min) = |Vmp_min_orig - Vmp_min_sub| / Vmp_min_orig
-      onde Vmp_min = vmp * (1 + (t_max - 25) * coef_pmp / 100)    [t_max=60]
+      onde Vmp_min = vmp * (1 + (t_max - 25) * coef_v / 100)      [t_max=60]
+      (a planilha original usava coef_pmp aqui; ver desvio acima)
   J14 (delta Imp_max) = |Imp_max_orig - Imp_max_sub| / Imp_max_orig
       onde Imp_max = imp * (1 + (t_min - 25) * coef_i / 100)      [t_min=0 !]
 
@@ -101,8 +110,9 @@ def compute_mismatch(original: ModuleForMismatch, substituto: ModuleForMismatch)
 
     voc_max_o = original.voc * (1 + (MISMATCH_T_MIN - 25) * original.coef_v / 100)
     voc_max_s = substituto.voc * (1 + (MISMATCH_T_MIN - 25) * substituto.coef_v / 100)
-    vmp_min_o = original.vmp * (1 + (MISMATCH_T_MAX - 25) * original.coef_pmp / 100)
-    vmp_min_s = substituto.vmp * (1 + (MISMATCH_T_MAX - 25) * substituto.coef_pmp / 100)
+    # Decisao Fotus 2026-11-24: coef_v (tensao), nao coef_pmp — mesma regra do motor de dimensionamento.
+    vmp_min_o = original.vmp * (1 + (MISMATCH_T_MAX - 25) * original.coef_v / 100)
+    vmp_min_s = substituto.vmp * (1 + (MISMATCH_T_MAX - 25) * substituto.coef_v / 100)
     # Fiel a planilha: usa t_min (nao t_max) tambem para Imp_max — ver docstring do modulo.
     imp_max_o = original.imp * (1 + (MISMATCH_T_MIN - 25) * original.coef_i / 100)
     imp_max_s = substituto.imp * (1 + (MISMATCH_T_MIN - 25) * substituto.coef_i / 100)

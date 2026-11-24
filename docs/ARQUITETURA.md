@@ -130,7 +130,7 @@ fixture-generator/          ferramenta offline que executa o HTML em `node:vm` e
 
 **Limitações herdadas** (do README do fotus-dimens, que continuam valendo para o motor porta):
 - microinversor não entra em `suggest_kit`; nas tools de cálculo gera aviso (`MICROINVERTER_WARNING`);
-- inversores cujo cadastro tem **menos correntes por MPPT do que MPPTs** (24 no catálogo do HTML) lançam `MPPT_INDEX_OUT_OF_RANGE`; na validação do kit isso vira "Verificar", nunca aprovação silenciosa;
+- inversores cujo cadastro tem **menos correntes por MPPT do que MPPTs** (24 no catálogo do HTML; 13 no catálogo atual deste repositório) lançam `MPPT_INDEX_OUT_OF_RANGE` no cálculo de limites. No motor TypeScript isso vira "Verificar" na validação do kit. **Neste repositório o resultado final é diferente**: o motor canônico ainda devolve "Verificar", mas a camada de negócio (`recompute_badge_from_per_mppt`) recalcula o veredito só com os MPPTs que aparecem no detalhamento. Se o vendedor configurar um MPPT sem corrente cadastrada, ele some do detalhamento e o kit pode sair **"Aprovado" sem aviso** (testado: 2 MPPTs configurados, 1 sem dado, resultado "Aprovado" com 1 de 2 MPPTs avaliados). Ver seção 17;;
 - sem fuzzy match de ids; catálogo imutável por release; só transporte stdio.
 
 ---
@@ -266,7 +266,7 @@ Existem para casos em que o fabricante muda limites conforme o tamanho do kit. E
 
 Lógica nova, portada da planilha (não existia no motor TS). Ver `mismatch.py` e `area.py`.
 
-- **Mismatch** (área restrita): compara um módulo original com um substituto. Calcula o delta relativo de 8 parâmetros elétricos e, na janela térmica fixa 0–60 °C, de `Voc_max`, `Vmp_min` e `Imp_max`. Veredito **MATCH** se os três deltas ≤ 3 %, senão **MISMATCH**. **Atenção**: por fidelidade à planilha, `Imp_max` usa `t_min` (0 °C) em vez de `t_max`; a célula da planilha é rotulada "Imp max (Tmax)", o que sugere erro de copiar-e-colar na origem. Foi reproduzido de propósito e precisa de decisão de quem validou a planilha.
+- **Mismatch** (área restrita): compara um módulo original com um substituto. Calcula o delta relativo de 8 parâmetros elétricos e, na janela térmica fixa 0–60 °C, de `Voc_max`, `Vmp_min` e `Imp_max`. A tensão mínima `Vmp_min` do Mismatch usa o **`Coef V`** (decisão Fotus de 2026-11-24, a mesma do dimensionamento; a planilha original usava `Coef Pmp` nessa célula). Veredito **MATCH** se os três deltas ≤ 3 %, senão **MISMATCH**. **Atenção**: por fidelidade à planilha, `Imp_max` usa `t_min` (0 °C) em vez de `t_max`; a célula da planilha é rotulada "Imp max (Tmax)", o que sugere erro de copiar-e-colar na origem. Foi reproduzido de propósito e precisa de decisão de quem validou a planilha.
 - **Comparativo de área** (aberto ao comercial): por módulo, `área = altura · largura / 1e6`, `W/m² = Pnom / área`; para uma meta de kWp, `quantidade = round(meta·1000 / Pnom)` (meio sobe) e área ocupada; para uma área útil, `quantidade = floor(área_útil / área)` e kWp atingido.
 
 ---
@@ -493,8 +493,8 @@ Lista honesta do que o time vai encontrar. Nenhuma delas foi escondida; algumas 
 | Ajuste de sobrecarga | Substitui o cadastro (0 % zera) | Já há aviso, mas continua fácil de errar |
 | Regras empilham | Duas regras no mesmo inversor se multiplicam | Ao criar a regra definitiva, desativar a antiga |
 | `Imp_max` do Mismatch | Usa `t_min` por fidelidade à planilha | Pode ser erro da planilha original; precisa de decisão |
-| Mismatch ainda usa `Coef Pmp` | A aba Mismatch (fiel à planilha) calcula `Vmp_min` com o coeficiente de potência, diferente do motor de dimensionamento, que passou a usar `Coef V` | Decidir se o Mismatch deve seguir a mesma regra; não foi alterado |
 | HTML e `fotus-dimens` desatualizados nesse ponto | Ainda aplicam `Coef Pmp` na tensão mínima | Quem usar esses artefatos como oráculo verá resultados diferentes; usar este repositório como referência |
+| MPPT configurado sem corrente cadastrada | Para os 13 inversores com menos correntes do que MPPTs, o MPPT sem dado some do detalhamento e o kit pode ser aprovado sem aviso (via API); com corrente **zerada/vazia** num MPPT existente, o limite é ignorado (assume 99 strings, valendo só `lin_max`) e o kit é aprovado | Aprovação sem a verificação de corrente; decidir se deve virar "Verificar" ou recusa |
 | Queda silenciosa do servidor | A tarefa agendada não reinicia | Hospedagem fora de máquina pessoal |
 | Frontend sem testes automáticos | Verificação manual | Cobrir antes de refatorar |
 | Tipos do frontend escritos à mão | Podem divergir do OpenAPI | Gerar a partir de `/openapi.json` |

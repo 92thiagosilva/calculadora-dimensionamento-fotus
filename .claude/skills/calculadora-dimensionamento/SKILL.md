@@ -42,7 +42,7 @@ artifact/                      cópia compartilhável (Artefato do Claude): moto
 
 Não reordene operações nem "simplifique" fórmulas: ponto flutuante não é associativo e a paridade bit-a-bit é requisito de negócio. Qualquer mudança passa pelos 37 testes golden.
 
-**Único desvio do HTML canônico (decisão Fotus, 2026-11-24):** `vmp_min` usa o coeficiente de **tensão** (`coef_v`); o HTML, o projeto `fotus-dimens` e as planilhas anteriores usam `coef_pmp`. As fixtures dependentes foram regeneradas por `backend/tests/golden/tools/regenerar_fixtures.js` (oráculo = HTML com um termo trocado; rode `--controle` antes para provar o script). `tests/test_vmp_min_coef_v.py` protege a decisão. O Mismatch **não** foi alterado e ainda usa `coef_pmp`.
+**Único desvio do HTML canônico (decisão Fotus, 2026-11-24):** `vmp_min` usa o coeficiente de **tensão** (`coef_v`); o HTML, o projeto `fotus-dimens` e as planilhas anteriores usam `coef_pmp`. As fixtures dependentes foram regeneradas por `backend/tests/golden/tools/regenerar_fixtures.js` (oráculo = HTML com um termo trocado; rode `--controle` antes para provar o script). `tests/test_vmp_min_coef_v.py` protege a decisão. O Mismatch segue a mesma regra (`vmp_min` com `coef_v`; a planilha usava `coef_pmp`), coberto por `tests/test_mismatch_coef_v.py`.
 
 - Correção térmica (`corrections.py`), com `t_min`/`t_max` da região:
   `voc_max = voc·(1+(t_min−25)·coef_v/100)`, `vmp_min = vmp·(1+(t_max−25)·coef_v/100)` (desvio deliberado, ver acima), `imp_max = imp·(1+(t_max−25)·coef_i/100)`, `isc_max = isc·(1+(t_max−25)·coef_i/100)`.
