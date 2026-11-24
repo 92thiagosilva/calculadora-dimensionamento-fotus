@@ -5,7 +5,8 @@
     "module_label": "HONOR |  HY-M12/132G-700W | 700W MONO N-TYPE BIFACIAL DG (22,5%)",
     "preset": "Conservador",
     "autor": "fixture-generator",
-    "html_sha256": "14e1ee1bcc32c002e83bda2511a9fdb3753f551d98a3061163576be8d6508ac7"
+    "html_sha256": "0686917e1bf66b5d7891fafa3426a50e6c947ba9ce9725126e132d294c2976fe",
+    "oraculo": "HTML canonico com UM termo alterado: vmpMin usa coef_v (decisao Fotus 2026-11-24). Regenerado por tests/golden/tools/regenerar_fixtures.js --coef-v"
   },
   "inputs": {
     "mod": {
@@ -31,7 +32,7 @@
   },
   "outputs": {
     "vocMax": 51.10451,
-    "vmpMin": 35.626,
+    "vmpMin": 35.986000000000004,
     "impMax": 17.714867,
     "iscMax": 18.706333
   }

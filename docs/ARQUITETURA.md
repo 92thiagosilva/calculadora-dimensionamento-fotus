@@ -57,6 +57,8 @@ Os comentários do tipo *"implementação BIT-EXATA de `calcMpptLimits` do HTML 
 
 **"Bit-exata"** significa: mesma ordem de operações, sem reescrever fórmulas em forma matematicamente equivalente. Ponto flutuante não é associativo; mudar a ordem pode alterar o último dígito e, em casos de empate, o veredito. Por isso o motor canônico é intocável (seção 6).
 
+**Desvio deliberado do HTML canônico (decisão Fotus, 2026-11-24).** Na tensão mínima do módulo (`Vmp_min`) este repositório usa o coeficiente de **tensão** (`Coef V`); o HTML canônico, o projeto `fotus-dimens` e as planilhas anteriores usam o de **potência** (`Coef Pmp`) nesse ponto. Foi o único termo trocado: as outras três correções (`Voc_max`, `Imp_max`, `Isc_max`) continuam idênticas. O HTML e o projeto TypeScript **não foram alterados** e ainda aplicam `Coef Pmp`; para esse ponto, a referência passa a ser este repositório.
+
 ---
 
 ## 2. Quem é quem: diferenças entre os três
@@ -175,13 +177,13 @@ sequenceDiagram
 
 ## 6. O motor de cálculo, passo a passo
 
-Arquivos: `backend/app/domain/calculo_solar/{corrections,mppt_limits,validate_kit,auto_config}.py`. **Não alterar.** Qualquer mudança passa pelos 37 testes golden; se algum mudar, a alteração está no lugar errado: mova-a para uma camada (seção 7).
+Arquivos: `backend/app/domain/calculo_solar/{corrections,mppt_limits,validate_kit,auto_config}.py`. **Não alterar sem decisão de negócio.** Qualquer mudança passa pelos 37 testes golden; se algum mudar, a alteração está no lugar errado: mova-a para uma camada (seção 7). A única diferença em relação ao HTML canônico é o coeficiente da tensão mínima, descrita logo abaixo.
 
 **Entradas**: módulo (potência, Voc, Vmp, Isc, Imp, coeficientes térmicos), inversor (potência CA, potência CC máxima, V max, faixa MPP, correntes e nº de strings por MPPT), faixa de temperatura (`t_min`, `t_max`).
 
 1. **Correção térmica** (`corrections.py`), pior caso para tensão e corrente:
    - `Voc_max = Voc · (1 + (t_min − 25) · coef_V / 100)`
-   - `Vmp_min = Vmp · (1 + (t_max − 25) · coef_Pmp / 100)`
+   - `Vmp_min = Vmp · (1 + (t_max − 25) · coef_V / 100)` — **coeficiente de tensão, decisão Fotus de 2026-11-24.** O HTML canônico e o `fotus-dimens` usam `coef_Pmp` aqui. Efeito medido no catálogo atual: o mínimo de módulos por string muda em ≈ 13 % dos pares módulo × inversor na região Conservadora (0–60 °C) e em 16 a 18 % nas demais, de 1 módulo (até 2 nas regiões mais quentes), sempre para menos.
    - `Imp_max = Imp · (1 + (t_max − 25) · coef_I / 100)`
    - `Isc_max = Isc · (1 + (t_max − 25) · coef_I / 100)`
 2. **Limites de um MPPT** (`mppt_limits.py`):
@@ -419,6 +421,8 @@ cd backend && .venv/Scripts/python -m pytest -q     # 80 testes
 | `tests/test_rule_tester_api.py` | O teste de regra é somente leitura, respeita permissão e compara sem × com a regra. |
 | `tests/test_rule_scope_and_overload_note.py` | Escopo por inversor e aviso de sobrecarga substituída. |
 
+As 34 fixtures que dependem de `Vmp_min` foram **regeneradas** com `backend/tests/golden/tools/regenerar_fixtures.js`: o script executa as funções do próprio HTML num sandbox, com um único termo trocado (`coef_pmp` → `coef_v`), e antes disso foi provado que, sem a troca, ele reproduz as 37 fixtures originais bit a bit. O cabeçalho de cada fixture registra o hash do HTML usado e a nota `oraculo`. `tests/test_vmp_min_coef_v.py` protege a decisão com um caso em que o coeficiente muda o mínimo de módulos (5 em vez de 6).
+
 Limite do que isso prova: as fixtures golden deste repositório são as fixtures **manuais** (resultam nos 37 casos de teste), copiadas do projeto TypeScript. A prova de **61.070 pares** vive no projeto `fotus-dimens`, não aqui. Os testes das camadas novas verificam o comportamento especificado, mas **não existe** um oráculo externo para elas (o HTML não tem essas regras).
 
 Não há testes automatizados do frontend; a verificação dele foi feita manualmente no navegador.
@@ -489,6 +493,8 @@ Lista honesta do que o time vai encontrar. Nenhuma delas foi escondida; algumas 
 | Ajuste de sobrecarga | Substitui o cadastro (0 % zera) | Já há aviso, mas continua fácil de errar |
 | Regras empilham | Duas regras no mesmo inversor se multiplicam | Ao criar a regra definitiva, desativar a antiga |
 | `Imp_max` do Mismatch | Usa `t_min` por fidelidade à planilha | Pode ser erro da planilha original; precisa de decisão |
+| Mismatch ainda usa `Coef Pmp` | A aba Mismatch (fiel à planilha) calcula `Vmp_min` com o coeficiente de potência, diferente do motor de dimensionamento, que passou a usar `Coef V` | Decidir se o Mismatch deve seguir a mesma regra; não foi alterado |
+| HTML e `fotus-dimens` desatualizados nesse ponto | Ainda aplicam `Coef Pmp` na tensão mínima | Quem usar esses artefatos como oráculo verá resultados diferentes; usar este repositório como referência |
 | Queda silenciosa do servidor | A tarefa agendada não reinicia | Hospedagem fora de máquina pessoal |
 | Frontend sem testes automáticos | Verificação manual | Cobrir antes de refatorar |
 | Tipos do frontend escritos à mão | Podem divergir do OpenAPI | Gerar a partir de `/openapi.json` |
@@ -525,7 +531,7 @@ Reimportar a planilha (`import_excel`) **substitui tudo**. Antes, combinar com o
 
 ### 18.4 Mudar uma fórmula do motor canônico
 
-Só com decisão de negócio documentada. Regenerar as fixtures no projeto `fotus-dimens` a partir do HTML (`fixture-generator`), copiar para `backend/tests/golden/fixtures/manual/`, ajustar o Python **e** o JavaScript do artefato, e rodar a paridade do artefato (`node artifact/parity/parity.test.js`).
+Só com decisão de negócio documentada. Ajustar o Python **e** o JavaScript do artefato; regenerar as fixtures com `backend/tests/golden/tools/regenerar_fixtures.js` (rode antes com `--controle` para provar que o script reproduz as fixtures atuais; depois aplique a alteração no mesmo script, como foi feito para o `Coef V`), ou, se a mudança vier do HTML, regenerar no projeto `fotus-dimens` (`fixture-generator`) e copiar para `backend/tests/golden/fixtures/manual/`; e rodar a paridade do artefato (`node artifact/parity/parity.test.js`).
 
 ### 18.5 Publicar uma nova versão do artefato do Claude
 

@@ -5,7 +5,8 @@
     "module_label": "PULLING, BY LEAPTON | PU560SPM101 | 560W MONO (21,68%)",
     "preset": "Conservador",
     "autor": "fixture-generator",
-    "html_sha256": "14e1ee1bcc32c002e83bda2511a9fdb3753f551d98a3061163576be8d6508ac7"
+    "html_sha256": "0686917e1bf66b5d7891fafa3426a50e6c947ba9ce9725126e132d294c2976fe",
+    "oraculo": "HTML canonico com UM termo alterado: vmpMin usa coef_v (decisao Fotus 2026-11-24). Regenerado por tests/golden/tools/regenerar_fixtures.js --coef-v"
   },
   "inputs": {
     "mod": {
@@ -31,7 +32,7 @@
   },
   "outputs": {
     "vocMax": 54.41680000000001,
-    "vmpMin": 35.196,
+    "vmpMin": 36.708,
     "impMax": 13.629925,
     "iscMax": 14.427475
   }

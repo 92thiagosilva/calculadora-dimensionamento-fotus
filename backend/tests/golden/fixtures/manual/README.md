@@ -1,5 +1,11 @@
 # Fixtures manuais (~20+ canonicas) — Golden Tests
 
+> **Atualizacao 2026-11-24 (decisao Fotus):** as 34 fixtures que dependem de `vmpMin` foram
+> regeneradas com `../../tools/regenerar_fixtures.js --coef-v`: oraculo = as funcoes do HTML
+> canonico com UM termo trocado (`vmpMin` usa `coef_v`, nao `coef_pmp`). O cabecalho de cada
+> uma traz o `html_sha256` do HTML usado e a nota `oraculo`. As 3 fixtures que nao dependem
+> de `vmpMin` seguem as originais. As demais regras abaixo continuam valendo.
+
 Fixtures GERADAS off-line pelo `fixture-generator/` (executa o HTML
 canonico em `node:vm` sandbox — dec-021). Esta pasta e versionada e
 **NAO** deve ser modificada manualmente.

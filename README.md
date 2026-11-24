@@ -22,6 +22,8 @@ Estes três artefatos nasceram um do outro. O resultado **oficial** é o do prim
 2. **Projeto TypeScript `fotus-dimens`** (servidor MCP): primeiro porte do HTML, com testes que provam paridade bit a bit (inclusive os 61.070 pares módulo × inversor, segundo o README dele).
 3. **Este repositório**: portou o motor do TypeScript para Python e acrescentou a aplicação web, o catálogo editável, ajustes configuráveis e regras novas.
 
+**Uma diferença deliberada:** na tensão mínima do módulo este repositório usa o coeficiente de tensão (`Coef V`), enquanto os itens 1 e 2 usam o de potência (`Coef Pmp`). Decisão Fotus de 2026-11-24; detalhes em [`docs/ARQUITETURA.md`](docs/ARQUITETURA.md).
+
 Os arquivos 1 e 2 **não estão neste repositório** (ficam em um projeto separado). Os comentários do tipo "BIT-EXATA ... linhas 840-865 ... portada de fotus-dimens (TS)" em `backend/app/domain/calculo_solar/` apontam para essa cadeia. Detalhes e diferenças entre os três em [`docs/ARQUITETURA.md`](docs/ARQUITETURA.md).
 
 ## Estrutura
@@ -47,7 +49,9 @@ kit, sugestão automática) foi portado para Python a partir de um
 motor TypeScript já validado bit-a-bit contra a calculadora HTML
 canônica da Fotus (61.070 combinações módulo×inversor testadas). Os
 37 testes de paridade (`backend/tests/golden`) confirmam que os
-números batem exatamente com a referência.
+números batem exatamente com a referência, com uma exceção deliberada: a
+tensão mínima do módulo usa o coeficiente de tensão (`Coef V`) em vez do
+de potência (decisão Fotus de 2026-11-24; fixtures regeneradas).
 
 **Catálogo**: importado diretamente da aba `BD` da planilha
 `2026 - Dimensionamento Módulo x Inversor - JUNHO 2 (1).xlsx` (173

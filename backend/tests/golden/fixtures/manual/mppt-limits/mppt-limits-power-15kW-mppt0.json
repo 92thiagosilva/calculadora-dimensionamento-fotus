@@ -6,7 +6,8 @@
     "inverter_label": "GROWATT | MID 15K TL3-XL 220V (4 MPPT)",
     "preset": "Conservador",
     "autor": "fixture-generator",
-    "html_sha256": "14e1ee1bcc32c002e83bda2511a9fdb3753f551d98a3061163576be8d6508ac7"
+    "html_sha256": "0686917e1bf66b5d7891fafa3426a50e6c947ba9ce9725126e132d294c2976fe",
+    "oraculo": "HTML canonico com UM termo alterado: vmpMin usa coef_v (decisao Fotus 2026-11-24). Regenerado por tests/golden/tools/regenerar_fixtures.js --coef-v"
   },
   "inputs": {
     "inv": {
@@ -80,7 +81,7 @@
     "maxStringsByIsc": 2,
     "linMax": 2,
     "vocMax": 54.36315,
-    "vmpMin": 36.0253,
+    "vmpMin": 37.46845,
     "impMax": 13.242845,
     "iscMax": 14.140665,
     "imaxMppt": 26,

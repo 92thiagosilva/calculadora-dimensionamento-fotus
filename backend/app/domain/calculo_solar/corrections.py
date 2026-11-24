@@ -1,17 +1,26 @@
 """`apply_module_corrections` — correcao termica de modulo FV.
 
-Portado BIT-EXATO de fotus-dimens (TS) `apply-corrections.ts`, que por
-sua vez espelha `calcModuleCorrections` do HTML canonico Fotus
-(linhas 832-838). NAO reescrever as formulas em forma matematicamente
-equivalente — ponto flutuante IEEE754 nao e associativo, e a paridade
-bit-a-bit com a planilha/HTML e um requisito de negocio (dec-033 do
-projeto de origem).
+Portado de fotus-dimens (TS) `apply-corrections.ts`, que por sua vez
+espelha `calcModuleCorrections` do HTML canonico Fotus (linhas 832-838).
+NAO reescrever as formulas em forma matematicamente equivalente — ponto
+flutuante IEEE754 nao e associativo, e a paridade bit-a-bit e um
+requisito de negocio (dec-033 do projeto de origem).
+
+DESVIO DELIBERADO DO HTML CANONICO (decisao Fotus, 2026-11-24): a tensao
+minima `vmp_min` usa o coeficiente de TENSAO (`coef_v`), nao o de
+potencia (`coef_pmp`) que o HTML canonico, o projeto fotus-dimens (TS) e
+as planilhas anteriores usam nesse ponto. Toda tensao do modulo passa a
+ser corrigida com o mesmo coeficiente de temperatura da tensao. As demais
+tres formulas continuam identicas ao HTML. O HTML e o projeto TS NAO foram
+alterados e ainda aplicam `coef_pmp` em `vmp_min`; as fixtures golden de
+`vmp_min` foram regeneradas a partir de uma copia do HTML com apenas
+esse termo trocado (ver tests/golden/tools/).
 
 Formulas:
-    voc_max = voc * (1 + (t_min - 25) * coef_v   / 100)
-    vmp_min = vmp * (1 + (t_max - 25) * coef_pmp / 100)
-    imp_max = imp * (1 + (t_max - 25) * coef_i   / 100)
-    isc_max = isc * (1 + (t_max - 25) * coef_i   / 100)
+    voc_max = voc * (1 + (t_min - 25) * coef_v / 100)
+    vmp_min = vmp * (1 + (t_max - 25) * coef_v / 100)
+    imp_max = imp * (1 + (t_max - 25) * coef_i / 100)
+    isc_max = isc * (1 + (t_max - 25) * coef_i / 100)
 """
 
 from __future__ import annotations
@@ -26,7 +35,6 @@ class ModuleForCorrections(Protocol):
     imp: float
     isc: float
     coef_v: float
-    coef_pmp: float
     coef_i: float
 
 
@@ -42,7 +50,7 @@ def apply_module_corrections(
     mod: ModuleForCorrections, t_min: float, t_max: float
 ) -> ModuleCorrections:
     voc_max = mod.voc * (1 + (t_min - 25) * mod.coef_v / 100)
-    vmp_min = mod.vmp * (1 + (t_max - 25) * mod.coef_pmp / 100)
+    vmp_min = mod.vmp * (1 + (t_max - 25) * mod.coef_v / 100)
     imp_max = mod.imp * (1 + (t_max - 25) * mod.coef_i / 100)
     isc_max = mod.isc * (1 + (t_max - 25) * mod.coef_i / 100)
     return ModuleCorrections(voc_max=voc_max, vmp_min=vmp_min, imp_max=imp_max, isc_max=isc_max)

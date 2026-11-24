@@ -43,7 +43,7 @@
   function applyModuleCorrections(mod, tMin, tMax) {
     return {
       voc_max: mod.voc * (1 + ((tMin - 25) * mod.coef_v) / 100),
-      vmp_min: mod.vmp * (1 + ((tMax - 25) * mod.coef_pmp) / 100),
+      vmp_min: mod.vmp * (1 + ((tMax - 25) * mod.coef_v) / 100), // decisao Fotus 2026-11-24: coef de tensao (o HTML original usava coef_pmp)
       imp_max: mod.imp * (1 + ((tMax - 25) * mod.coef_i) / 100),
       isc_max: mod.isc * (1 + ((tMax - 25) * mod.coef_i) / 100),
     }

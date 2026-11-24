@@ -38,12 +38,14 @@ scripts/start-production.ps1   sobe o servidor de produção
 artifact/                      cópia compartilhável (Artefato do Claude): motor em JavaScript + interface; ver artifact/README.md
 ```
 
-## Motor canônico — NÃO alterar
+## Motor canônico — NÃO alterar sem decisão de negócio
 
 Não reordene operações nem "simplifique" fórmulas: ponto flutuante não é associativo e a paridade bit-a-bit é requisito de negócio. Qualquer mudança passa pelos 37 testes golden.
 
+**Único desvio do HTML canônico (decisão Fotus, 2026-11-24):** `vmp_min` usa o coeficiente de **tensão** (`coef_v`); o HTML, o projeto `fotus-dimens` e as planilhas anteriores usam `coef_pmp`. As fixtures dependentes foram regeneradas por `backend/tests/golden/tools/regenerar_fixtures.js` (oráculo = HTML com um termo trocado; rode `--controle` antes para provar o script). `tests/test_vmp_min_coef_v.py` protege a decisão. O Mismatch **não** foi alterado e ainda usa `coef_pmp`.
+
 - Correção térmica (`corrections.py`), com `t_min`/`t_max` da região:
-  `voc_max = voc·(1+(t_min−25)·coef_v/100)`, `vmp_min = vmp·(1+(t_max−25)·coef_pmp/100)`, `imp_max = imp·(1+(t_max−25)·coef_i/100)`, `isc_max = isc·(1+(t_max−25)·coef_i/100)`.
+  `voc_max = voc·(1+(t_min−25)·coef_v/100)`, `vmp_min = vmp·(1+(t_max−25)·coef_v/100)` (desvio deliberado, ver acima), `imp_max = imp·(1+(t_max−25)·coef_i/100)`, `isc_max = isc·(1+(t_max−25)·coef_i/100)`.
 - Limites do MPPT (`mppt_limits.py`): `lin_max = inv.lin_max[i] or 99`; `max_series_voc = floor(v_max/voc_max)`; `max_series_vmpp = floor(v_mpp_max/vmp)` (usa o **vmp de STC** do módulo; sem `v_mpp_max` vale `max_series_voc`); `min_series = ceil(v_mpp_min/vmp_min)` (sem `v_mpp_min` vale 1); `max_series = min(max_series_voc, max_series_vmpp)`; `max_strings = min(floor(imax/imp_max), floor(isc/isc_max), lin_max)` (corrente ≤ 0 vale 99). Índice de MPPT fora de `mppt_currents` → `MPPT_INDEX_OUT_OF_RANGE`; inversor sem `v_max` → `CALCULATION_NUMERIC_ERROR`.
 - Validação (`validate_kit.py`): `overload_fail = total_kwp > p_max_cc/1000` → "Reprovado". MPPT sem configuração ou fora dos limites → "Verificar". `ratio_cc_ca` é arredondado com semântica `toFixed(0)` do JS. Inversor sem `p_max_cc` → erro.
 - `recompute_badge_from_per_mppt` (commercial_rules): não usar um MPPT é válido; considera só os MPPTs configurados.

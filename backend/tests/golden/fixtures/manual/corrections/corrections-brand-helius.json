@@ -5,7 +5,8 @@
     "module_label": "HELIUS | HMB132T10R 570HL | 570W MONO N-TYPE BIFACIAL DG (22,10%)",
     "preset": "Conservador",
     "autor": "fixture-generator",
-    "html_sha256": "14e1ee1bcc32c002e83bda2511a9fdb3753f551d98a3061163576be8d6508ac7"
+    "html_sha256": "0686917e1bf66b5d7891fafa3426a50e6c947ba9ce9725126e132d294c2976fe",
+    "oraculo": "HTML canonico com UM termo alterado: vmpMin usa coef_v (decisao Fotus 2026-11-24). Regenerado por tests/golden/tools/regenerar_fixtures.js --coef-v"
   },
   "inputs": {
     "mod": {
@@ -31,7 +32,7 @@
   },
   "outputs": {
     "vocMax": 51.49606000000001,
-    "vmpMin": 34.62595,
+    "vmpMin": 35.34649,
     "impMax": 14.534768,
     "iscMax": 15.412569999999999
   }
