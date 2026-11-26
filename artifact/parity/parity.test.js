@@ -74,6 +74,24 @@ for (const [n, c] of cases.auto.entries()) {
 report('autoConfigStrings', cases.auto.length, before)
 
 before = diffs.length
+for (const [n, c] of cases.validate_zero.entries()) {
+  let out, err = null
+  try { out = E.buildValidationResponse(c.inv_obj, mod.get(c.mod), c.t[0], c.t[1], c.cfg, c.adj) } catch (e) { err = e.code || String(e) }
+  if (c.error || err) { if (c.error !== err) diffs.push(`validate_zero#${n}: erro esperado ${c.error}, veio ${err}`); continue }
+  cmp(`validate_zero#${n}`, out, c.expected)
+}
+report('buildValidationResponse (corrente zerada)', cases.validate_zero.length, before)
+
+before = diffs.length
+let totalZ = 0
+for (const [n, c] of cases.suggest_zero.entries()) {
+  const out = E.suggestKit(c.modules, c.inverters, 0, 60, { target_inverter_kw: c.alvo, max_suggestions: 60 }, {}, E.DEFAULT_ADJUSTMENTS)
+  totalZ += c.expected.length
+  cmp(`suggest_zero#${n}`, out, c.expected)
+}
+report(`suggestKit (corrente zerada, ${totalZ} sugestoes)`, cases.suggest_zero.length, before)
+
+before = diffs.length
 let totalSug = 0
 for (const [n, c] of cases.suggest.entries()) {
   const p = c.params

@@ -130,7 +130,7 @@ fixture-generator/          ferramenta offline que executa o HTML em `node:vm` e
 
 **Limitações herdadas** (do README do fotus-dimens, que continuam valendo para o motor porta):
 - microinversor não entra em `suggest_kit`; nas tools de cálculo gera aviso (`MICROINVERTER_WARNING`);
-- inversores cujo cadastro tem **menos correntes por MPPT do que MPPTs** (24 no catálogo do HTML; 13 no catálogo atual deste repositório) lançam `MPPT_INDEX_OUT_OF_RANGE` no cálculo de limites. No motor TypeScript isso vira "Verificar" na validação do kit. **Neste repositório o resultado final é diferente**: o motor canônico ainda devolve "Verificar", mas a camada de negócio (`recompute_badge_from_per_mppt`) recalcula o veredito só com os MPPTs que aparecem no detalhamento. Se o vendedor configurar um MPPT sem corrente cadastrada, ele some do detalhamento e o kit pode sair **"Aprovado" sem aviso** (testado: 2 MPPTs configurados, 1 sem dado, resultado "Aprovado" com 1 de 2 MPPTs avaliados). Ver seção 17;;
+- inversores cujo cadastro tem **menos correntes por MPPT do que MPPTs** (24 no catálogo do HTML; 13 no catálogo atual deste repositório) lançam `MPPT_INDEX_OUT_OF_RANGE` no cálculo de limites. No motor TypeScript isso vira "Verificar" na validação do kit. Neste repositório o motor canônico também devolve "Verificar", mas o veredito é recalculado só com os MPPTs do detalhamento; por isso a camada de negócio acrescenta uma checagem (`find_mppt_data_gaps`): um MPPT **configurado** sem corrente cadastrada faz o kit sair **"Verificar"**, com a nota `mppt_data_note` (antes, até 2026-11-24, ele podia sair "Aprovado" sem aviso). MPPT não configurado não conta. Corrente cadastrada vazia ou zero é outro caso, tratado na seção 17;
 - sem fuzzy match de ids; catálogo imutável por release; só transporte stdio.
 
 ---
@@ -215,6 +215,7 @@ Tudo que é regra **nova** (não existia no HTML) entra como camada aplicada **a
 | 4 | **Ressalvas**: com qualquer ajuste ativo, roda também com o inversor cru e compara; o que só passa por causa de ajuste/regra vira "Aprovado com ressalva" com o motivo explicado | `calc_adjustments.validate_kit_with_rules` |
 | 5 | **Aviso de sobrecarga substituída**: quando um ajuste troca a sobrecarga do catálogo | `calc_adjustments.overload_override_note` |
 | 6 | **Regra comercial CC/CA mínima**: potência dos módulos ≥ X % da potência CA nominal (X = 70 por padrão); abaixo → Reprovado | `routes_dimensionamento._apply_dc_ac_ratio_rule` |
+| 7 | **MPPT com cadastro de corrente incompleto**: MPPT configurado sem nenhuma corrente cadastrada → "Verificar" (`mppt_data_note`); corrente vazia/zero → aprovado só com ressalva (limite de corrente ignorado, assume 99 strings) | `commercial_rules.find_mppt_data_gaps`, `routes_dimensionamento._apply_mppt_data_gaps` |
 
 `build_validation_response` (em `routes_dimensionamento.py`) é o pipeline completo; é usado pela validação, pelo teste de regras e pela sugestão.
 
@@ -358,6 +359,7 @@ Campos que merecem atenção:
 - `formula_badge` guarda o veredito do motor **antes** da regra CC/CA (útil para depuração). `dc_ac_ratio_note` explica a reprovação por CC/CA.
 - `applied_rules` lista as regras condicionais que o kit atendeu; `rules_relaxed` indica que elas liberaram algo que só com os ajustes fixos reprovaria.
 - `overload_override` aparece quando um ajuste de sobrecarga substitui o catálogo.
+- `mppts_sem_dados` (índices 0-based dos MPPTs configurados sem corrente no cadastro), `mppt_data_note` (texto explicativo) e `mppts_corrente_ignorada` (MPPTs configurados com corrente vazia/zero). Com `mppts_sem_dados` não vazio, `overall_badge` nunca é de aprovação ("Verificar", ou "Reprovado" se outra regra reprovar) e `all_mppt_ok` é `false`.
 - `ratio_cc_ca` é um **valor de exibição** arredondado (inteiro); para decisões use `total_kwp` e `dc_ac_min_kwp_required`.
 - `dc_ac_min_kwp_required` depende do ajuste de CC/CA vigente no momento (o exemplo acima foi gerado com 50 %).
 
@@ -494,7 +496,7 @@ Lista honesta do que o time vai encontrar. Nenhuma delas foi escondida; algumas 
 | Regras empilham | Duas regras no mesmo inversor se multiplicam | Ao criar a regra definitiva, desativar a antiga |
 | `Imp_max` do Mismatch | Usa `t_min` por fidelidade à planilha | Pode ser erro da planilha original; precisa de decisão |
 | HTML e `fotus-dimens` desatualizados nesse ponto | Ainda aplicam `Coef Pmp` na tensão mínima | Quem usar esses artefatos como oráculo verá resultados diferentes; usar este repositório como referência |
-| MPPT configurado sem corrente cadastrada | Para os 13 inversores com menos correntes do que MPPTs, o MPPT sem dado some do detalhamento e o kit pode ser aprovado sem aviso (via API); com corrente **zerada/vazia** num MPPT existente, o limite é ignorado (assume 99 strings, valendo só `lin_max`) e o kit é aprovado | Aprovação sem a verificação de corrente; decidir se deve virar "Verificar" ou recusa |
+| Corrente de MPPT cadastrada vazia ou zero | O motor ignora o limite (assume 99 strings; vale só `lin_max`, ou 99 se ele também estiver vazio). O kit sai "Aprovado com ressalva", com o motivo explicado. **Nenhum inversor do catálogo atual é afetado**: os 2 que têm corrente zero (ABB TRIO-50-TL e GOODWE GW3KB-XS, ambos de 1 MPPT) trazem o zero numa entrada de preenchimento além de `num_mppt`, que nunca é usada. Vale para inversores cadastrados no futuro | Decisão de negócio: manter assim ou recusar o inversor até o cadastro ser completado. Atenção: com a tolerância de I max padrão de fábrica (+2 A) um I max zero vira 2 A e passa a limitar a 0 strings |
 | Queda silenciosa do servidor | A tarefa agendada não reinicia | Hospedagem fora de máquina pessoal |
 | Frontend sem testes automáticos | Verificação manual | Cobrir antes de refatorar |
 | Tipos do frontend escritos à mão | Podem divergir do OpenAPI | Gerar a partir de `/openapi.json` |

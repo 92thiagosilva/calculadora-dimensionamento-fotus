@@ -18,7 +18,11 @@ from app.domain.calculo_solar.calc_adjustments import (
     check_dc_ac_ratio_with_adjustments,
     validate_kit_with_rules,
 )
-from app.domain.calculo_solar.commercial_rules import recompute_badge_from_per_mppt
+from app.domain.calculo_solar.commercial_rules import (
+    find_mppt_data_gaps,
+    mppt_corrente_zerada_reasons,
+    recompute_badge_from_per_mppt,
+)
 from app.domain.calculo_solar.conditional_rules import AppliedRule, rule_variant_inverters
 from app.domain.calculo_solar.mppt_limits import calculate_mppt_limits
 from app.domain.calculo_solar.validate_kit import (
@@ -257,6 +261,17 @@ def suggest_kit(
                     continue
                 if ratio_reason:
                     ressalva_reasons = ressalva_reasons + [ratio_reason]
+                    if validation.overall_badge == "Aprovado":
+                        validation = dataclasses.replace(validation, overall_badge="Aprovado com ressalva")  # type: ignore[arg-type]
+
+                # MPPT usado com corrente cadastrada vazia/zero: o limite de corrente foi
+                # ignorado (assume 99) -> aprovado so COM ressalva. (MPPT sem nenhuma linha de
+                # corrente nunca entra: o candidato o deixa como nao usado.)
+                zerada_reasons = mppt_corrente_zerada_reasons(
+                    inv, find_mppt_data_gaps(inv, cfg_padded).corrente_zerada
+                )
+                if zerada_reasons:
+                    ressalva_reasons = ressalva_reasons + zerada_reasons
                     if validation.overall_badge == "Aprovado":
                         validation = dataclasses.replace(validation, overall_badge="Aprovado com ressalva")  # type: ignore[arg-type]
 

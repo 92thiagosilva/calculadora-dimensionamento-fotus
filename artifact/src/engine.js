@@ -446,6 +446,38 @@
     }
   }
 
+  // ---------- MPPT configurado com cadastro de corrente incompleto (camada de negocio) ----------
+  function findMpptDataGaps(inv, cfg) {
+    const semDados = []
+    const correnteZerada = []
+    for (let i = 0; i < cfg.length; i++) {
+      const c = cfg[i]
+      if (c == null || i >= inv.num_mppt) continue
+      if (i >= inv.mppt_currents.length) {
+        semDados.push(i)
+        continue
+      }
+      const cur = inv.mppt_currents[i]
+      if (cur.imax <= 0 || cur.isc <= 0) correnteZerada.push(i)
+    }
+    return { semDados, correnteZerada }
+  }
+  const mpptLabel = (idx) => {
+    const nums = idx.map((i) => i + 1)
+    return nums.length === 1 ? `MPPT ${nums[0]}` : 'MPPTs ' + nums.join(', ')
+  }
+  const mpptSemDadosNote = (idx) =>
+    idx.length
+      ? `Não foi possível verificar ${mpptLabel(idx)}: o cadastro deste inversor não traz a corrente (I max e Isc) do(s) MPPT(s) configurado(s). ` +
+        'Complete o cadastro ou deixe de usar o(s) MPPT(s) para o kit poder ser aprovado.'
+      : null
+  const mpptCorrenteZeradaReasons = (inv, idx) =>
+    idx.map((i) => {
+      const raw = i < inv.lin_max.length ? inv.lin_max[i] : 0
+      const limite = raw ? `${Math.trunc(raw)} entrada(s) do MPPT` : 'sem limite de entradas informado'
+      return `MPPT ${i + 1}: o cadastro não traz a corrente (I max e/ou Isc); o limite de corrente foi ignorado (assumido 99 strings) e as strings ficam limitadas só por ${limite}.`
+    })
+
   /** Pipeline completo de validacao (ajustes + regras + CC/CA), formato da API. */
   function buildValidationResponse(inv, mod, tMin, tMax, cfg, adj) {
     const adjusted = validateKitWithRules(inv, mod, tMin, tMax, cfg, adj)
@@ -473,6 +505,20 @@
         out.ressalva_reasons.push(reason)
         if (out.overall_badge === 'Aprovado') out.overall_badge = 'Aprovado com ressalva'
       }
+    }
+
+    const gaps = findMpptDataGaps(inv, cfg)
+    out.mppts_sem_dados = gaps.semDados
+    out.mppts_corrente_ignorada = gaps.correnteZerada
+    out.mppt_data_note = mpptSemDadosNote(gaps.semDados)
+    if (gaps.semDados.length) {
+      out.all_mppt_ok = false
+      if (out.overall_badge === 'Aprovado' || out.overall_badge === 'Aprovado com ressalva') out.overall_badge = 'Verificar'
+    }
+    const zeradaReasons = mpptCorrenteZeradaReasons(inv, gaps.correnteZerada)
+    if (zeradaReasons.length) {
+      out.ressalva_reasons.push(...zeradaReasons)
+      if (out.overall_badge === 'Aprovado') out.overall_badge = 'Aprovado com ressalva'
     }
     return out
   }
@@ -594,6 +640,11 @@
           if (!ratioCheck.ok) continue
           if (ratioReason) {
             reasons = [...reasons, ratioReason]
+            if (validation.overall_badge === 'Aprovado') validation = { ...validation, overall_badge: 'Aprovado com ressalva' }
+          }
+          const zeradaReasons = mpptCorrenteZeradaReasons(inv, findMpptDataGaps(inv, cfg).correnteZerada)
+          if (zeradaReasons.length) {
+            reasons = [...reasons, ...zeradaReasons]
             if (validation.overall_badge === 'Aprovado') validation = { ...validation, overall_badge: 'Aprovado com ressalva' }
           }
           if (hasDc && !(o.target_kwp * 0.95 <= validation.total_kwp && validation.total_kwp <= o.target_kwp * 1.05)) continue

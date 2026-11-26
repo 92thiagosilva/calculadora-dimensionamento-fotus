@@ -159,6 +159,62 @@ for ps in param_sets:
     cases["suggest"].append({"params": ps, "expected": out})
 cases["suggest_adjustments"] = {"by_inverter": by_inv_json, "default": ADJ_SETS["sem_ajuste"]}
 
+# ---- inversores SINTETICOS com corrente cadastrada zerada (a base real tem poucos): clones de inversores
+# reais com I max e/ou Isc = 0 em um MPPT. Exercita a ressalva "limite de corrente ignorado".
+def zeroed_clone(inv0, k, which, new_id):
+    mc = []
+    for j, cur in enumerate(inv0.mppt_currents):
+        if j == k:
+            mc.append(MpptCurrents(imax=0.0 if which in ("imax", "ambos") else cur.imax, isc=0.0 if which in ("isc", "ambos") else cur.isc))
+        else:
+            mc.append(cur)
+    return dataclasses.replace(inv0, inverter_id=new_id, mppt_currents=mc)
+
+
+candidatos = [i for i in inverters if len(i.mppt_currents) >= 1 and i.p_max_cc and i.v_max and i.categoria != "Microinversor"]
+cases["validate_zero"] = []
+for n in range(120):
+    inv0 = rng.choice(candidatos)
+    k = rng.randrange(len(inv0.mppt_currents))
+    inv1 = zeroed_clone(inv0, k, rng.choice(["imax", "isc", "ambos"]), 900000 + n)
+    mod = rng.choice(modules)
+    t_min, t_max = rng.choice(regions)
+    adj = ADJ_SETS[rng.choice(list(ADJ_SETS))]
+    cfg = []
+    for i in range(inv1.num_mppt):
+        if rng.random() < 0.2:
+            cfg.append(None)
+            continue
+        try:
+            lim = calculate_mppt_limits(inv1, mod, t_min, t_max, i)
+            series = rng.randint(max(1, lim.min_series), max(1, lim.max_series))
+            strings = rng.randint(1, max(1, min(6, int(lim.max_strings))))
+        except ToolError:
+            series, strings = rng.randint(1, 20), rng.randint(1, 3)
+        cfg.append({"series": series, "strings": strings})
+    py_cfg = [MpptConfigInput(**c) if c else None for c in cfg]
+    try:
+        exp = build_validation_response(inv1, mod, t_min, t_max, py_cfg, to_adj(adj))
+        exp = json.loads(json.dumps(exp, default=lambda o: dataclasses.asdict(o) if dataclasses.is_dataclass(o) else str(o)))
+        err = None
+    except ToolError as e:
+        exp, err = None, e.code
+    cases["validate_zero"].append({"inv_obj": dataclasses.asdict(inv1), "mod": mod.module_id, "t": [t_min, t_max], "cfg": cfg, "adj": adj, "expected": exp, "error": err})
+
+mods_z = rng.sample(modules, 12)
+invs_z = [zeroed_clone(rng.choice(candidatos), 0, rng.choice(["imax", "isc", "ambos"]), 910000 + n) for n in range(10)]
+cases["suggest_zero"] = []
+for alvo in sorted({round(i.p_nom / 1000, 2) for i in invs_z})[:4]:
+    res = suggest_kit(mods_z, invs_z, 0, 60, target_inverter_kw=alvo, adjustments_by_inverter_id={}, max_suggestions=60)
+    out = []
+    for s_ in res:
+        val = vars(s_.validation).copy()
+        val["per_mppt"] = [{**vars(p_), "limits": vars(p_.limits)} for p_ in s_.validation.per_mppt]
+        val["ressalva_reasons"] = s_.ressalva_reasons
+        val["applied_rules"] = [vars(a) for a in s_.applied_rules]
+        out.append({"module_id": s_.module_id, "inverter_id": s_.inverter_id, "mppt_config": [vars(c_) for c_ in s_.mppt_config], "validation": val, "score": s_.score})
+    cases["suggest_zero"].append({"alvo": alvo, "modules": [dataclasses.asdict(m) for m in mods_z], "inverters": [dataclasses.asdict(i) for i in invs_z], "expected": out})
+
 ids = [m.module_id for m in modules[:40]]
 cases["area"] = {"ids": ids, "target_kwp": 12.5, "area_util_m2": 77.7,
                  "expected": [vars(r) for r in compare_modules_area([mod_by_id[i] for i in ids], target_kwp=12.5, area_util_m2=77.7)]}

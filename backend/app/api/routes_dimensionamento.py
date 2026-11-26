@@ -21,7 +21,12 @@ from app.domain.calculo_solar.calc_adjustments import (
     overload_override_note,
     validate_kit_with_rules,
 )
-from app.domain.calculo_solar.commercial_rules import recompute_badge_from_per_mppt
+from app.domain.calculo_solar.commercial_rules import (
+    find_mppt_data_gaps,
+    mppt_corrente_zerada_reasons,
+    mppt_sem_dados_note,
+    recompute_badge_from_per_mppt,
+)
 from app.domain.calculo_solar.conditional_rules import AppliedRule, apply_rules, kit_context, rule_to_dict
 from app.domain.calculo_solar.corrections import apply_module_corrections
 from app.domain.calculo_solar.mppt_limits import calculate_mppt_limits
@@ -64,6 +69,27 @@ def _apply_dc_ac_ratio_rule(out: dict, inv, adjustments: CalcAdjustments) -> Non
                 out["overall_badge"] = "Aprovado com ressalva"
 
 
+def _apply_mppt_data_gaps(out: dict, inv, cfg) -> None:
+    """MPPT configurado sem corrente cadastrada: o motor o omite do detalhamento e o veredito
+    recalculado so olha os MPPTs presentes, o que aprovava o kit sem avisar. Aqui:
+    - sem NENHUMA linha de corrente no cadastro -> o kit nao pode ser aprovado ('Verificar');
+    - corrente cadastrada vazia/zero -> aprovado, mas COM ressalva (o limite de corrente foi ignorado).
+    'Reprovado' continua 'Reprovado'."""
+    gaps = find_mppt_data_gaps(inv, cfg)
+    out["mppts_sem_dados"] = gaps.sem_dados
+    out["mppts_corrente_ignorada"] = gaps.corrente_zerada
+    out["mppt_data_note"] = mppt_sem_dados_note(gaps.sem_dados)
+    if gaps.sem_dados:
+        out["all_mppt_ok"] = False
+        if out["overall_badge"] in ("Aprovado", "Aprovado com ressalva"):
+            out["overall_badge"] = "Verificar"
+    reasons = mppt_corrente_zerada_reasons(inv, gaps.corrente_zerada)
+    if reasons:
+        out.setdefault("ressalva_reasons", []).extend(reasons)
+        if out["overall_badge"] == "Aprovado":
+            out["overall_badge"] = "Aprovado com ressalva"
+
+
 def build_validation_response(
     inv, mod, t_min: float, t_max: float, cfg, adjustments: CalcAdjustments, overload_source: Optional[str] = None
 ) -> dict:
@@ -83,6 +109,7 @@ def build_validation_response(
     out["rules_relaxed"] = adjusted.rules_relaxed
     out["overload_override"] = overload_override_note(inv, adjustments, overload_source)
     _apply_dc_ac_ratio_rule(out, inv, adjustments)
+    _apply_mppt_data_gaps(out, inv, cfg)
     return out
 
 

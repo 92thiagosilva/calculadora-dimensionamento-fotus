@@ -414,6 +414,7 @@
             h('span', null, h('b', null, r.total_mods), ' módulos'), h('span', null, h('b', null, fmt(r.total_kwp, 2)), ' kWp'),
             h('span', null, h('b', null, fmt(r.ratio_cc_ca, 0) + '%'), ' CC/CA'), h('span', null, h('b', null, fmt(r.overload_kw)), ' kW de limite CC')))))
     if (r.overload_override) body.append(alertBox('warn', 'Sobrecarga do catálogo substituída:', r.overload_override.message))
+    if (r.mppt_data_note) body.append(alertBox('warn', 'Atenção:', r.mppt_data_note))
     if (r.wiring_note) body.append(alertBox('bad', 'Atenção:', r.wiring_note))
     if (r.dc_ac_ratio_note) body.append(alertBox('bad', 'Atenção:', r.dc_ac_ratio_note))
     if (!r.rules_relaxed && r.applied_rules.length) body.append(alertBox('warn', 'Regras condicionais aplicadas:', h('ul', null, r.applied_rules.map((a) => h('li', null, a.description)))))

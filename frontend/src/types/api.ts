@@ -144,6 +144,11 @@ export interface ValidateKitResponse {
   dc_ac_ratio_ok?: boolean
   dc_ac_min_kwp_required?: number
   dc_ac_ratio_note?: string | null
+  /** MPPTs configurados sem nenhuma corrente no cadastro do inversor (índices 0-based): o kit não pode ser aprovado. */
+  mppts_sem_dados?: number[]
+  /** MPPTs configurados com corrente cadastrada vazia/zero: o limite de corrente foi ignorado (aprovação só com ressalva). */
+  mppts_corrente_ignorada?: number[]
+  mppt_data_note?: string | null
   /** Explicações de quais ajustes configurados (Imax/Isc/V max/V MPP min/max/sobrecarga) foram decisivos para a aprovação. */
   ressalva_reasons?: string[]
   /** Regras condicionais cujas condições o kit atendeu. */

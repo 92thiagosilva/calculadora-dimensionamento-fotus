@@ -58,6 +58,13 @@ export function ResultPanel({ result, module, inverter }: ResultPanelProps) {
         </div>
       )}
 
+      {result.mppt_data_note && (
+        <div className="alert alert--warning result-note">
+          <strong>Atenção: </strong>
+          {result.mppt_data_note}
+        </div>
+      )}
+
       {result.dc_ac_ratio_note && (
         <div className="alert alert--danger result-note">
           <strong>Atenção: </strong>
